@@ -5,7 +5,7 @@
 ## Login   <jonathan.machado@epitech.net>
 ## 
 ## Started on  Fri Sep  2 11:36:43 2011 Jonathan Machado
-## Last update Fri Sep  9 09:46:07 2011 Jonathan Machado
+## Last update Fri Sep  9 16:07:38 2011 Jonathan Machado
 ##
 
 NAME=		flowstat
@@ -25,7 +25,7 @@ OBJS:=		$(addprefix $(OBJS_DIR), $(OBJS))
 
 
 all: 		
-	       cc srcs/*.c -Iincludes libs/libipulog/libipulog.a -o $(NAME) -Iincludes/cson libs/cson/*.c -g3
+	       cc srcs/*.c -Iincludes libs/libipulog/libipulog.a -o $(NAME) -Iincludes/cson libs/cson/*.c -D DNS_ACTIVATE
 
 $(NAME): 	$(OBJS)
 		@$(CC) -o $@ $^ $(CFLAGS)

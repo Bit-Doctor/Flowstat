@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Fri Sep  2 12:00:57 2011 Jonathan Machado
-** Last update Fri Sep  9 18:45:23 2011 Jonathan Machado
+** Last update Fri Sep  9 16:57:23 2011 Jonathan Machado
 */
 
 
@@ -33,10 +33,10 @@ void			create_new_json(void)
   fluxV = cson_value_new_array();
   flux = cson_value_get_array(fluxV);
   cson_object_set(root, "Log start", cson_value_new_string(date, strlen(date)));
-  cson_object_set(root, "Last save", cson_value_new_string("", 0));
   cson_object_set(root, "Log start time", cson_value_new_integer(t));
+  cson_object_set(root, "Last save", cson_value_new_string("", 0));
   cson_object_set(root, "Last save time", cson_value_new_integer(0));
-  cson_object_set(root, "flux", fluxV);
+  cson_object_set(root, "IP", fluxV);
 }
 
 void			init_log_file(void)
