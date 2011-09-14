@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:28:37 2011 Jonathan Machado
-** Last update Wed Sep 14 14:41:25 2011 Jonathan Machado
+** Last update Wed Sep 14 16:42:33 2011 Jonathan Machado
 */
 
 #include <arpa/inet.h>
@@ -169,18 +169,19 @@ static int			is_the_same_connection(cson_object* object,  struct iphdr *iph, int
       break;
     case IPPROTO_TCP:
       tcph = protocol_header;
+      printf("in %i p1 %i p2 %i test %i\n",input, htons(tcph->source), cson_value_get_integer(cson_object_get(object, "port")), (input && htons(tcph->source) != cson_value_get_integer(cson_object_get(object, "port"))));
       if (input && htons(tcph->source) != cson_value_get_integer(cson_object_get(object, "port")))
 	return (0);
-      else if (htons(tcph->dest) != cson_value_get_integer(cson_object_get(object, "port")))
+      else if (!input && htons(tcph->dest) != cson_value_get_integer(cson_object_get(object, "port")))
 	return (0);
       break;
     case IPPROTO_UDP:
       udph = protocol_header;
       if (input && htons(udph->source) != cson_value_get_integer(cson_object_get(object, "port")))
 	return (0);
-      else if (htons(udph->dest) != cson_value_get_integer(cson_object_get(object, "port")))
+      else if (!input && htons(udph->dest) != cson_value_get_integer(cson_object_get(object, "port")))
 	return (0);
-	}
+    }
   return (1);
 }
 
@@ -210,7 +211,8 @@ void			packet_handler(ulog_packet_msg_t *pkt)
     }
   sprintf(str_addr,"%u.%u.%u.%u", INTTOIP(addr));
   flux_len = cson_array_length_get(info.flux);
-  for (i = 0, find = 0; i < flux_len; ++i)
+  find = 0;
+  for (i = 0; i < flux_len; ++i)
     {
       tempO = cson_value_get_object(cson_array_get(info.flux, i));
       if (strcmp(cson_string_cstr(cson_value_get_string(cson_object_get(tempO, "ip"))), str_addr) == 0)
