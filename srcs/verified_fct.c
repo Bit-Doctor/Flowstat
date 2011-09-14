@@ -5,23 +5,46 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:30:08 2011 Jonathan Machado
-** Last update Wed Sep  7 14:38:41 2011 Jonathan Machado
+** Last update Wed Sep 14 13:18:00 2011 Jonathan Machado
 */
 
+#include <syslog.h>
 #include "flowstat.h"
 #include "libipulog/libipulog.h"
 
-struct ipulog_handle	*verified_ipulog_create_handle(u_int32_t gmask, u_int32_t rcvbufsize)
+void			flowstat_perror(char *str)
 {
-  struct ipulog_handle	*h;
+  if (str)
+    syslog(LOG_ERR, "%s\n", str);
+  else if (!ipulog_errno && !errno)
+    syslog(LOG_ERR, "%s\n", "ERROR");
+  else if (ipulog_errno)
+    syslog(LOG_ERR, "%s\n", ipulog_strerror(ipulog_errno));
+  else if (errno)
+    syslog(LOG_ERR, "%m\n");
+#ifdef DEBUG
+  if (str)
+    fprintf(stderror, "%s\n", str);
+  else if (!ipulog_errno && !errno)
+    fprintf(stderror, "%s\n", "ERROR");
+  else if (ipulog_errno)
+    fprintf(stderror, "%s\n", ipulog_strerror(ipulog_errno));
+  else if (errno)
+    fprintf(stderror, "%s\n", strerror(errno));
+#endif
+}
 
-  h = ipulog_create_handle(gmask, rcvbufsize);
-  if (!h)
+struct ipulog_handle    *verified_ipulog_create_handle(u_int32_t group_mask, u_int32_t rcvbufsize)
+{
+  struct ipulog_handle  *handler;
+
+  handler = ipulog_create_handle(group_mask, rcvbufsize);
+  if (!handler)
     {
-      ipulog_perror(NULL);
+      flowstat_perror(NULL);
       exit(EXIT_FAILURE);
     }
-  return (h);
+  return (handler);
 }
 
 void			*xmalloc(int size)
@@ -31,7 +54,7 @@ void			*xmalloc(int size)
   ret = malloc(size);
   if (ret == NULL)
     {
-      ipulog_perror(NULL);
+      flowstat_perror(NULL);
       exit(EXIT_FAILURE);
     }
   return (ret);

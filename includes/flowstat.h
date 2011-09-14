@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:24:24 2011 Jonathan Machado
-** Last update Fri Sep  9 10:57:12 2011 Jonathan Machado
+** Last update Wed Sep 14 13:45:34 2011 Jonathan Machado
 */
 
 #ifndef __FLOWSTAT_H__
@@ -23,7 +23,8 @@
 # include <string.h>
 # include <time.h>
 
-#include "libipulog/libipulog.h"
+# include "cson_amalgamation_core.h"
+# include "libipulog/libipulog.h"
 
 
 /*
@@ -48,13 +49,23 @@
 **
 */
 
+struct		global_info
+{
+  int			local_ip;
+  char			*buffer;
+  struct ipulog_handle	*connection;
+  cson_value		*rootV;
+  cson_object		*root;
+  cson_array		*flux;
+};
+
 /*
 **
 **		PROTOTYPE
 **
 */
 
-struct ipulog_handle	*verified_ipulog_create_handle(u_int32_t gmask, u_int32_t rcvbufsize);
+struct ipulog_handle    *verified_ipulog_create_handle(u_int32_t group_mask, u_int32_t rcvbufsize);
 void			*xmalloc(int size);
 void			packet_handler(ulog_packet_msg_t *pkt);
 

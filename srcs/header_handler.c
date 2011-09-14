@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:28:37 2011 Jonathan Machado
-** Last update Fri Sep  9 16:07:15 2011 Jonathan Machado
+** Last update Wed Sep 14 13:43:59 2011 Jonathan Machado
 */
 
 #include <arpa/inet.h>
@@ -17,9 +17,7 @@
 #include "libipulog/libipulog.h"
 #include "flowstat.h"
 
-extern cson_value		*rootV;
-extern cson_object		*root;
-extern cson_array		*flux;
+extern struct global_info	info;
 
 #ifndef DEBUG
 /*
@@ -73,15 +71,10 @@ static void			udpheader_handler(void *protocol_header, cson_object *new)
 static void			create_new_connection_object(cson_array *connections,  struct iphdr *iph)
 {
   int			addr;
-  char			*date;
   char			*daddr;
-  time_t		t;
   cson_value		*newV;
   cson_object		*new;
 
-  time(&t);
-  date = ctime(&t);
-  date[24] = 0;
   addr = ntohl(iph->daddr);
   daddr = xmalloc(INET6_ADDRSTRLEN * sizeof(*daddr));
   sprintf(daddr,"%u.%u.%u.%u", INTTOIP(addr));
@@ -106,10 +99,8 @@ static void			create_new_connection_object(cson_array *connections,  struct iphd
     default:
       cson_object_set(new, "protocole name", cson_value_new_string("other", strlen("other")));
     }
-  cson_object_set(new, "first log", cson_value_new_string(date, strlen(date)));
-  cson_object_set(new, "last log", cson_value_new_string(date, strlen(date)));
-  cson_object_set(new, "first log time", cson_value_new_integer(t));
-  cson_object_set(new, "last log time", cson_value_new_integer(t));
+  cson_object_set(new, "first log", cson_value_new_integer(time(NULL)));
+  cson_object_set(new, "last log", cson_value_new_integer(time(NULL)));
   cson_object_set(new, "number of occurancy", cson_value_new_integer(1));
   cson_array_append(connections, newV);
   free(daddr);
@@ -117,8 +108,6 @@ static void			create_new_connection_object(cson_array *connections,  struct iphd
 
 static void			create_new_flux_object(char *saddr, struct iphdr *iph)
 {
-  char			*date;
-  time_t		t;
   cson_value		*newV;
   cson_object		*new;
   cson_value		*connectionsV;
@@ -126,12 +115,7 @@ static void			create_new_flux_object(char *saddr, struct iphdr *iph)
 #ifdef DNS_ACTIVATE
   struct sockaddr_in	socket;
   char			dns[1024];
-#endif
 
-  time(&t);
-  date = ctime(&t);
-  date[24] = 0;
-#ifdef DNS_ACTIVATE
   socket.sin_family = AF_INET;
   socket.sin_addr.s_addr = inet_addr(saddr);
   socket.sin_port = htons(80);
@@ -145,12 +129,10 @@ static void			create_new_flux_object(char *saddr, struct iphdr *iph)
 #ifdef DNS_ACTIVATE
   cson_object_set(new, "hostname", cson_value_new_string(dns, strlen(dns)));
 #endif
-  cson_object_set(new, "first connection", cson_value_new_string(date, strlen(date)));
-  cson_object_set(new, "last connection", cson_value_new_string(date, strlen(date)));
-  cson_object_set(new, "first connection time", cson_value_new_integer(t));
-  cson_object_set(new, "last connection time", cson_value_new_integer(t));
+  cson_object_set(new, "first connection", cson_value_new_integer(time(NULL)));
+  cson_object_set(new, "last connection", cson_value_new_integer(time(NULL)));
   cson_object_set(new, "connections", connectionsV);
-  cson_array_append(flux, newV);
+  cson_array_append(info.flux, newV);
   create_new_connection_object(connections, iph);
 }
 
@@ -164,8 +146,7 @@ static void			incr_connection_object(cson_object* object)
   date = ctime(&t);
   date[24] = 0;
   prev_occ = cson_value_get_integer(cson_object_get(object, "number of occurancy"));
-  cson_object_set(object, "last log", cson_value_new_string(date, strlen(date)));
-  cson_object_set(object, "last log time", cson_value_new_integer(t));
+  cson_object_set(object, "last log", cson_value_new_integer(time(NULL)));
   cson_object_set(object, "number of occurancy", cson_value_new_integer(prev_occ + 1));
 }
 
@@ -214,24 +195,18 @@ void			packet_handler(ulog_packet_msg_t *pkt)
   struct iphdr		*iph;
   cson_object		*tempO;
   cson_array		*tempA;
-  char			*date;
-  time_t		t;
 
   iph = (struct iphdr *)pkt->payload;
   saddr = xmalloc(INET6_ADDRSTRLEN * sizeof(*saddr));
   addr = ntohl(iph->saddr);
   sprintf(saddr,"%u.%u.%u.%u", INTTOIP(addr));
-  flux_len = cson_array_length_get(flux);
+  flux_len = cson_array_length_get(info.flux);
   for (i = 0, find = 0; i < flux_len; ++i)
     {
-      tempO = cson_value_get_object(cson_array_get(flux, i));
+      tempO = cson_value_get_object(cson_array_get(info.flux, i));
       if (strcmp(cson_string_cstr(cson_value_get_string(cson_object_get(tempO, "ip source"))), saddr) == 0)
 	{
-	  time(&t);
-	  date = ctime(&t);
-	  date[24] = 0;
-	  cson_object_set(tempO, "last connection", cson_value_new_string(date, strlen(date)));
-	  cson_object_set(tempO, "last connection time", cson_value_new_integer(t));
+	  cson_object_set(tempO, "last connection", cson_value_new_integer(time(NULL)));
 	  tempA =  cson_value_get_array(cson_object_get(tempO, "connections"));
 	  connections_len = cson_array_length_get(tempA);
 	  for (j = 0; j < connections_len; ++j)
