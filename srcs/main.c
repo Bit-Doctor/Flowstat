@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Fri Sep  2 12:00:57 2011 Jonathan Machado
-** Last update Wed Sep 14 13:37:23 2011 Jonathan Machado
+** Last update Wed Sep 14 15:03:31 2011 Jonathan Machado
 */
 
 #include <syslog.h>
@@ -66,8 +66,22 @@ void			read_and_analyze(struct ipulog_handle *h)
       packet_handler(ulog_packet);
 }
 
+void save_json_in_file(void)
+{
+  FILE *file;
+  cson_output_opt opt;
+
+  file = fopen("./flowstat.log", "w");
+  cson_object_set(info.root, "Last save", cson_value_new_integer(time(NULL)));
+  opt = cson_output_opt_empty;
+  opt.indentation = 1;
+  cson_output_FILE(info.rootV, file, &opt);
+  fclose(file);
+}
+
 void			free_at_interupt(int signum)
 {
+  save_json_in_file();
   free(info.buffer);
   ipulog_destroy_handle(info.connection);
   cson_value_free(info.rootV);
