@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:24:24 2011 Jonathan Machado
-** Last update Wed Sep 14 13:45:34 2011 Jonathan Machado
+** Last update Thu Sep 15 16:51:25 2011 Jonathan Machado
 */
 
 #ifndef __FLOWSTAT_H__
@@ -48,6 +48,17 @@
 **		STRUCTURE
 **
 */
+
+typedef struct	packet_info
+{
+  u_int32_t		ip;
+  u_int16_t		input;
+  u_int16_t		protocol;
+  time_t		time;
+  u_int16_t		port;
+  u_int16_t		data;
+  u_int8_t		type;
+}		packet_info;
 
 struct		global_info
 {
