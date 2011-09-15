@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:28:37 2011 Jonathan Machado
-** Last update Thu Sep 15 09:04:25 2011 Jonathan Machado
+** Last update Thu Sep 15 10:26:05 2011 Jonathan Machado
 */
 
 #include <arpa/inet.h>
@@ -55,10 +55,19 @@ static void			tcpheader_handler(void *protocol_header, cson_object *new, int inp
   struct tcphdr		*tcph;
 
   tcph = protocol_header;
+  cson_object_set(new, "port", cson_value_new_integer(0));
+  cson_object_set(new, "input data", cson_value_new_integer(0));
+  cson_object_set(new, "output data", cson_value_new_integer(0));
   if (input)
-    cson_object_set(new, "port", cson_value_new_integer(ntohs(tcph->source)));
+    {
+      cson_object_set(new, "port", cson_value_new_integer(ntohs(tcph->source)));
+      cson_object_set(new, "input data", cson_value_new_integer(sizeof((u_int32_t *)tcph + tcph->doff)));
+    }
   else
-    cson_object_set(new, "port", cson_value_new_integer(ntohs(tcph->dest)));
+    {
+      cson_object_set(new, "port", cson_value_new_integer(ntohs(tcph->dest)));
+      cson_object_set(new, "output data", cson_value_new_integer(sizeof((u_int32_t *)tcph + tcph->doff)));
+    }
 }
 
 static void			udpheader_handler(void *protocol_header, cson_object *new, int input)
@@ -66,10 +75,19 @@ static void			udpheader_handler(void *protocol_header, cson_object *new, int inp
   struct udphdr		*udph;
 
   udph = protocol_header;
+  cson_object_set(new, "port", cson_value_new_integer(0));
+  cson_object_set(new, "input data", cson_value_new_integer(0));
+  cson_object_set(new, "output data", cson_value_new_integer(0));
   if (input)
-    cson_object_set(new, "port", cson_value_new_integer(ntohs(udph->source)));
+    {
+      cson_object_set(new, "port", cson_value_new_integer(ntohs(udph->source)));
+      cson_object_set(new, "input data", cson_value_new_integer(ntohs(udph->len) - sizeof(udph)));
+    }
   else
-    cson_object_set(new, "port", cson_value_new_integer(ntohs(udph->dest)));
+    {
+      cson_object_set(new, "port", cson_value_new_integer(ntohs(udph->dest)));
+      cson_object_set(new, "output data", cson_value_new_integer(ntohs(udph->len) - sizeof(udph)));
+    }
 }
 
 static void			create_new_connection_object(cson_array *connections,  struct iphdr *iph, int input)
@@ -79,7 +97,6 @@ static void			create_new_connection_object(cson_array *connections,  struct iphd
 
   newV = cson_value_new_object();
   new = cson_value_get_object(newV);
-  /* cson_object_set(new, "direction", cson_value_new_integer(input)); */
   cson_object_set(new, "protocole number", cson_value_new_integer(iph->protocol));
   switch (iph->protocol)
     {
@@ -100,6 +117,8 @@ static void			create_new_connection_object(cson_array *connections,  struct iphd
     }
   cson_object_set(new, "first packet", cson_value_new_integer(time(NULL)));
   cson_object_set(new, "last packet", cson_value_new_integer(time(NULL)));
+  cson_object_set(new, "number of input packet", cson_value_new_integer(0));
+  cson_object_set(new, "number of output packet", cson_value_new_integer(0));
   if (input)
     cson_object_set(new, "number of input packet", cson_value_new_integer(1));
   else
@@ -121,7 +140,7 @@ static void			create_new_flux_object(char *str_addr, struct iphdr *iph, int inpu
   socket.sin_addr.s_addr = inet_addr(str_addr);
   socket.sin_port = htons(80);
   getnameinfo(&socket, sizeof(socket), dns, sizeof(dns), NULL, 0, 0);
-#endif
+#endif /* DNS_ACTIVATE */
   newV = cson_value_new_object();
   new = cson_value_get_object(newV);
   connectionsV = cson_value_new_array();
@@ -129,7 +148,7 @@ static void			create_new_flux_object(char *str_addr, struct iphdr *iph, int inpu
   cson_object_set(new, "ip", cson_value_new_string(str_addr, strlen(str_addr)));
 #ifdef DNS_ACTIVATE
   cson_object_set(new, "hostname", cson_value_new_string(dns, strlen(dns)));
-#endif
+#endif /* DNS_ACTIVATE */
   cson_object_set(new, "first connection", cson_value_new_integer(time(NULL)));
   cson_object_set(new, "last connection", cson_value_new_integer(time(NULL)));
   cson_object_set(new, "connections", connectionsV);
@@ -139,17 +158,34 @@ static void			create_new_flux_object(char *str_addr, struct iphdr *iph, int inpu
 
 static void			incr_connection_object(cson_object* object, struct iphdr *iph, int input)
 {
-  int			prev_occ;
+  int				new_data;
+  int				prev_occ;
+  int				prev_data;
 
-  if (input)
-    prev_occ = cson_value_get_integer(cson_object_get(object, "number of input packet"));
-  else
-    prev_occ = cson_value_get_integer(cson_object_get(object, "number of output packet"));
+  if (iph->protocol == IPPROTO_TCP || iph->protocol == IPPROTO_UDP)
+    {
+      if (input)
+	{
+	  prev_data = cson_value_get_integer(cson_object_get(object, "input data"));
+	  cson_object_set(object, "input data", cson_value_new_integer(prev_data + new_data));
+	}
+      else
+	{
+	  prev_data = cson_value_get_integer(cson_object_get(object, "output data"));
+	  cson_object_set(object, "output data", cson_value_new_integer(prev_data + new_data));
+	}
+    }
   cson_object_set(object, "last packet", cson_value_new_integer(time(NULL)));
   if (input)
-    cson_object_set(object, "number of input packet", cson_value_new_integer(prev_occ + 1));
+    {
+      prev_occ = cson_value_get_integer(cson_object_get(object, "number of input packet"));
+      cson_object_set(object, "number of input packet", cson_value_new_integer(prev_occ + 1));
+    }
   else
-    cson_object_set(object, "number of output packet", cson_value_new_integer(prev_occ + 1));
+    {
+      prev_occ = cson_value_get_integer(cson_object_get(object, "number of output packet"));
+      cson_object_set(object, "number of output packet", cson_value_new_integer(prev_occ + 1));
+    }
 }
 
 static int			is_the_same_connection(cson_object* object, struct iphdr *iph, int input)
@@ -159,8 +195,6 @@ static int			is_the_same_connection(cson_object* object, struct iphdr *iph, int 
   struct icmphdr		*icmph;
   struct udphdr			*udph;
 
-  /* if (input != cson_value_get_integer(cson_object_get(object, "direction"))) */
-  /*   return (0); */
   if (iph->protocol != cson_value_get_integer(cson_object_get(object, "protocole number")))
     return (0);
   protocol_header = (u_int32_t *)iph + iph->ihl;
