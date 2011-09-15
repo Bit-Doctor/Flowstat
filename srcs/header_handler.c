@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:28:37 2011 Jonathan Machado
-** Last update Wed Sep 14 16:42:33 2011 Jonathan Machado
+** Last update Thu Sep 15 09:04:25 2011 Jonathan Machado
 */
 
 #include <arpa/inet.h>
@@ -79,7 +79,7 @@ static void			create_new_connection_object(cson_array *connections,  struct iphd
 
   newV = cson_value_new_object();
   new = cson_value_get_object(newV);
-  cson_object_set(new, "direction", cson_value_new_integer(input));
+  /* cson_object_set(new, "direction", cson_value_new_integer(input)); */
   cson_object_set(new, "protocole number", cson_value_new_integer(iph->protocol));
   switch (iph->protocol)
     {
@@ -98,9 +98,12 @@ static void			create_new_connection_object(cson_array *connections,  struct iphd
     default:
       cson_object_set(new, "protocole name", cson_value_new_string("other", strlen("other")));
     }
-  cson_object_set(new, "first log", cson_value_new_integer(time(NULL)));
-  cson_object_set(new, "last log", cson_value_new_integer(time(NULL)));
-  cson_object_set(new, "number of occurancy", cson_value_new_integer(1));
+  cson_object_set(new, "first packet", cson_value_new_integer(time(NULL)));
+  cson_object_set(new, "last packet", cson_value_new_integer(time(NULL)));
+  if (input)
+    cson_object_set(new, "number of input packet", cson_value_new_integer(1));
+  else
+    cson_object_set(new, "number of output packet", cson_value_new_integer(1));
   cson_array_append(connections, newV);
 }
 
@@ -134,29 +137,30 @@ static void			create_new_flux_object(char *str_addr, struct iphdr *iph, int inpu
   create_new_connection_object(connections, iph, input);
 }
 
-static void			incr_connection_object(cson_object* object)
+static void			incr_connection_object(cson_object* object, struct iphdr *iph, int input)
 {
   int			prev_occ;
-  char			*date;
-  time_t		t;
 
-  time(&t);
-  date = ctime(&t);
-  date[24] = 0;
-  prev_occ = cson_value_get_integer(cson_object_get(object, "number of occurancy"));
-  cson_object_set(object, "last log", cson_value_new_integer(time(NULL)));
-  cson_object_set(object, "number of occurancy", cson_value_new_integer(prev_occ + 1));
+  if (input)
+    prev_occ = cson_value_get_integer(cson_object_get(object, "number of input packet"));
+  else
+    prev_occ = cson_value_get_integer(cson_object_get(object, "number of output packet"));
+  cson_object_set(object, "last packet", cson_value_new_integer(time(NULL)));
+  if (input)
+    cson_object_set(object, "number of input packet", cson_value_new_integer(prev_occ + 1));
+  else
+    cson_object_set(object, "number of output packet", cson_value_new_integer(prev_occ + 1));
 }
 
-static int			is_the_same_connection(cson_object* object,  struct iphdr *iph, int input)
+static int			is_the_same_connection(cson_object* object, struct iphdr *iph, int input)
 {
   void				*protocol_header;
   struct tcphdr			*tcph;
   struct icmphdr		*icmph;
   struct udphdr			*udph;
 
-  if (input != cson_value_get_integer(cson_object_get(object, "direction")))
-    return (0);
+  /* if (input != cson_value_get_integer(cson_object_get(object, "direction"))) */
+  /*   return (0); */
   if (iph->protocol != cson_value_get_integer(cson_object_get(object, "protocole number")))
     return (0);
   protocol_header = (u_int32_t *)iph + iph->ihl;
@@ -169,8 +173,7 @@ static int			is_the_same_connection(cson_object* object,  struct iphdr *iph, int
       break;
     case IPPROTO_TCP:
       tcph = protocol_header;
-      printf("in %i p1 %i p2 %i test %i\n",input, htons(tcph->source), cson_value_get_integer(cson_object_get(object, "port")), (input && htons(tcph->source) != cson_value_get_integer(cson_object_get(object, "port"))));
-      if (input && htons(tcph->source) != cson_value_get_integer(cson_object_get(object, "port")))
+       if (input && htons(tcph->source) != cson_value_get_integer(cson_object_get(object, "port")))
 	return (0);
       else if (!input && htons(tcph->dest) != cson_value_get_integer(cson_object_get(object, "port")))
 	return (0);
@@ -184,7 +187,6 @@ static int			is_the_same_connection(cson_object* object,  struct iphdr *iph, int
     }
   return (1);
 }
-
 
 void			packet_handler(ulog_packet_msg_t *pkt)
 {
@@ -225,7 +227,7 @@ void			packet_handler(ulog_packet_msg_t *pkt)
 	      tempO = cson_value_get_object(cson_array_get(tempA, j));
 	      if (is_the_same_connection(tempO, iph, input))
 		{
-		  incr_connection_object(tempO);
+		  incr_connection_object(tempO, iph, input);
 		  find = 1;
 		}
 	    }
