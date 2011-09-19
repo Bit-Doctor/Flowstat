@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Fri Sep  2 12:00:57 2011 Jonathan Machado
-** Last update Wed Sep 14 15:26:46 2011 Jonathan Machado
+** Last update Fri Sep 16 10:47:30 2011 Jonathan Machado
 */
 
 #include <syslog.h>
@@ -28,7 +28,7 @@ int			get_local_ip(void)
 
   if(getifaddrs(&myaddrs) != 0)
     {
-      flowstat_perror(NULL);
+      flowstat_perror("getifaddrs");
       exit(EXIT_FAILURE);
     }
   for (ifa = myaddrs; ifa != NULL; ifa = ifa->ifa_next)
@@ -86,22 +86,63 @@ void			free_at_interupt(int signum)
   closelog();
   ipulog_destroy_handle(info.connection);
   cson_value_free(info.rootV);
-  exit(0);
+  exit(EXIT_SUCCESS);
+}
+
+int			demonize()
+{
+  int			pid;
+  int			fd;
+  char			str[10];
+
+  if(getppid() == 1)
+    return (1);			/* already a daemon */
+  if ((pid = fork()) < 0)
+    {
+      flowstat_perror("fork");
+      exit(EXIT_FAILURE);
+    }
+  if (pid > 0)
+    exit(EXIT_SUCCESS);		/* parent exits */
+  setsid();			/* obtain a new process group */
+  umask(027);			/* set newly created file permissions */
+  chdir("/tmp");       		/* change running directory */
+  if ((fd = open("flowstat.lock", O_RDWR | O_CREAT, 0640)) < 0)
+    {
+      flowstat_perror("open");
+      exit(EXIT_FAILURE);
+    }
+  if (lockf(fd, F_TLOCK, 0) < 0)
+    return (0); 		/* another instance is already running */
+  sprintf(str,"%d\n", getpid());
+  write(fd, str, strlen(str)); /* record pid to lockfile */
+  signal(SIGTSTP, SIG_IGN);	/* ignore tty signals */
+  signal(SIGTTOU, SIG_IGN);
+  signal(SIGTTIN, SIG_IGN);
+  return (1);
 }
 
 void			init(void)
 {
   create_new_json();
-  openlog("flowstat : ", LOG_PID, LOG_USER);
   info.connection = verified_ipulog_create_handle(ipulog_group2gmask(GROUP_NETLINK), 150000);
   info.local_ip = get_local_ip();
   info.buffer = xmalloc(BUFFER_SIZE * sizeof(*info.buffer));
-  signal(SIGINT, &free_at_interupt);
+  signal(SIGINT, &free_at_interupt); /* a suprimer */
 }
 
 int			main(void)
 {
-  init();
-  read_and_analyze(info.connection);
+  openlog("flowstat", LOG_PID, LOG_DAEMON);
+  /* if (demonize()) */
+  /*   { */
+      init();
+      read_and_analyze(info.connection);
+  /*   } */
+  /* else */
+    /* { */
+    /*   printf("cleint\n"); */
+    /* } */
+  closelog();
   return (EXIT_SUCCESS);
 }

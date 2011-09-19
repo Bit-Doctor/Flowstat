@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:28:37 2011 Jonathan Machado
-** Last update Thu Sep 15 16:51:05 2011 Jonathan Machado
+** Last update Mon Sep 19 11:11:01 2011 Jonathan Machado
 */
 
 #include <arpa/inet.h>
@@ -19,18 +19,22 @@
 
 extern struct global_info	info;
 
-#ifndef DEBUG
-
-/*
-** if the define debug is not set, all packet are loged in json tree
-** if not, fonction of header_handler_debug.c are used
-*/
+#ifndef DEBUG	/* if the define debug is not set, all packet are loged in json tree */
+		/* if not, fonction of packet_handler_debug.c are used insted */
 
 static void			incr_connection_object(cson_object* ip_flux, cson_object *connection, packet_info *pkt_info)
 {
+  int				status;
   int				prev_occ;
   int				prev_data;
 
+  if (pkt_info->protocol == IPPROTO_TCP && pkt_info->fin)
+    {
+      status = cson_value_get_integer(cson_object_get(connection, "status"));
+      cson_object_set(connection, "status", cson_value_new_integer(++status));
+    }
+  if (pkt_info->protocol == IPPROTO_TCP && pkt_info->rst)
+    cson_object_set(connection, "status", cson_value_new_integer(RESETED));
   if (pkt_info->protocol == IPPROTO_TCP || pkt_info->protocol == IPPROTO_UDP)
     {
       if (pkt_info->input)
@@ -60,6 +64,9 @@ static void			incr_connection_object(cson_object* ip_flux, cson_object *connecti
 
 static int			is_the_same_connection(cson_object* object, packet_info *pkt_info)
 {
+  if (cson_value_get_integer(cson_object_get(object, "status")) == CLOSED ||
+      cson_value_get_integer(cson_object_get(object, "status")))
+    return (0);
   if (pkt_info->protocol != cson_value_get_integer(cson_object_get(object, "protocole")))
     return (0);
   switch (pkt_info->protocol)
@@ -100,6 +107,10 @@ static void			tcpheader_handler(void *protocol_header, packet_info *pkt_info)
     pkt_info->port = ntohs(tcph->source);
   else
     pkt_info->port = ntohs(tcph->dest);
+  if (tcph->fin)
+    pkt_info->fin = 1;
+  if (tcph->rst)
+    pkt_info->rst = 1;
 }
 
 static void			udpheader_handler(void *protocol_header, packet_info *pkt_info)
@@ -179,6 +190,7 @@ static void			create_new_connection_object(cson_object *ip_flux, packet_info *pk
     cson_object_set(new, "number of input packet", cson_value_new_integer(1));
   else
     cson_object_set(new, "number of output packet", cson_value_new_integer(1));
+  cson_object_set(new, "status", cson_value_new_integer(LINKED));
   cson_object_set(new, "first packet", cson_value_new_integer(pkt_info->time));
   cson_object_set(new, "last packet", cson_value_new_integer(pkt_info->time));
   cson_array_append(connections, newV);
@@ -210,6 +222,7 @@ static void			create_new_flux_object(packet_info *pkt_info)
   cson_object_set(new, "first connection", cson_value_new_integer(pkt_info->time));
   cson_object_set(new, "last connection", cson_value_new_integer(pkt_info->time));
   cson_object_set(new, "connections", connectionsV);
+
   cson_array_append(info.flux, newV);
   create_new_connection_object(new, pkt_info);
 }

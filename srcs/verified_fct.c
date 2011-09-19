@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:30:08 2011 Jonathan Machado
-** Last update Wed Sep 14 13:18:00 2011 Jonathan Machado
+** Last update Fri Sep 16 10:30:15 2011 Jonathan Machado
 */
 
 #include <syslog.h>
@@ -14,12 +14,14 @@
 
 void			flowstat_perror(char *str)
 {
-  if (str)
+  if (str && !errno)
     syslog(LOG_ERR, "%s\n", str);
   else if (!ipulog_errno && !errno)
     syslog(LOG_ERR, "%s\n", "ERROR");
   else if (ipulog_errno)
     syslog(LOG_ERR, "%s\n", ipulog_strerror(ipulog_errno));
+  else if (str && errno)
+    syslog(LOG_ERR, "%s: %m\n", str);
   else if (errno)
     syslog(LOG_ERR, "%m\n");
 #ifdef DEBUG
@@ -54,7 +56,7 @@ void			*xmalloc(int size)
   ret = malloc(size);
   if (ret == NULL)
     {
-      flowstat_perror(NULL);
+      flowstat_perror("malloc");
       exit(EXIT_FAILURE);
     }
   return (ret);

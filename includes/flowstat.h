@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:24:24 2011 Jonathan Machado
-** Last update Thu Sep 15 16:51:25 2011 Jonathan Machado
+** Last update Mon Sep 19 11:08:22 2011 Jonathan Machado
 */
 
 #ifndef __FLOWSTAT_H__
@@ -17,6 +17,7 @@
 **
 */
 
+# include <errno.h>
 # include <unistd.h>
 # include <stdio.h>
 # include <stdlib.h>
@@ -38,8 +39,12 @@
  * If you have _big_ in-kernel queues, you may have to increase this number.  (
  * --qthreshold 100 * 1500 bytes/packet = 150kB  */
 # define ULOGD_RMEM_DEFAULT	150000
-# define BUFFER_SIZE 2048
-# define GROUP_NETLINK 1
+# define BUFFER_SIZE		2048
+# define GROUP_NETLINK		1
+# define LINKED			1
+# define ONE_PEER_CLOSE		2
+# define CLOSED			3
+# define RESETED		4
 # define INTTOIP(addr) ((unsigned char *)&addr)[3], ((unsigned char *)&addr)[2], \
     ((unsigned char *)&addr)[1], ((unsigned char *)&addr)[0]
 
@@ -58,6 +63,8 @@ typedef struct	packet_info
   u_int16_t		port;
   u_int16_t		data;
   u_int8_t		type;
+  u_int8_t		fin;
+  u_int8_t		rst;
 }		packet_info;
 
 struct		global_info
