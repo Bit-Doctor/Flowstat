@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:28:37 2011 Jonathan Machado
-** Last update Mon Sep 19 12:08:37 2011 Jonathan Machado
+** Last update Mon Sep 19 16:43:29 2011 Jonathan Machado
 */
 
 #include <arpa/inet.h>
@@ -28,13 +28,6 @@ static void			incr_connection_object(cson_object* ip_flux, cson_object *connecti
   int				prev_occ;
   int				prev_data;
 
-  if (pkt_info->protocol == IPPROTO_TCP && pkt_info->fin)
-    {
-      status = cson_value_get_integer(cson_object_get(connection, "status"));
-      cson_object_set(connection, "status", cson_value_new_integer(++status));
-    }
-  if (pkt_info->protocol == IPPROTO_TCP && pkt_info->rst)
-    cson_object_set(connection, "status", cson_value_new_integer(RESETED));
   if (pkt_info->protocol == IPPROTO_TCP || pkt_info->protocol == IPPROTO_UDP)
     {
       if (pkt_info->input)
@@ -60,13 +53,23 @@ static void			incr_connection_object(cson_object* ip_flux, cson_object *connecti
       prev_occ = cson_value_get_integer(cson_object_get(connection, "number of output packet"));
       cson_object_set(connection, "number of output packet", cson_value_new_integer(prev_occ + 1));
     }
+  if (pkt_info->protocol == IPPROTO_TCP && pkt_info->fin)
+    {
+      status = cson_value_get_integer(cson_object_get(connection, "status"));
+      if (status == CLOSED)
+	log_finished_connection(ip_flux, connection);
+      cson_object_set(connection, "status", cson_value_new_integer(++status));
+
+    }
+  if (pkt_info->protocol == IPPROTO_TCP && pkt_info->rst)
+    {
+      cson_object_set(connection, "status", cson_value_new_integer(RESETED));
+      log_finished_connection(ip_flux, connection);
+    }
 }
 
 static int			is_the_same_connection(cson_object* object, packet_info *pkt_info)
 {
-  if (cson_value_get_integer(cson_object_get(object, "status")) == CLOSED ||
-      cson_value_get_integer(cson_object_get(object, "status")) == RESETED)
-    return (0);
   if (pkt_info->protocol != cson_value_get_integer(cson_object_get(object, "protocole")))
     return (0);
   switch (pkt_info->protocol)
@@ -76,6 +79,9 @@ static int			is_the_same_connection(cson_object* object, packet_info *pkt_info)
 	return (0);
       break;
     case IPPROTO_TCP:
+      if (cson_value_get_integer(cson_object_get(object, "status")) == CLOSED ||
+	  cson_value_get_integer(cson_object_get(object, "status")) == RESETED)
+	return (0);
       if (pkt_info->input && pkt_info->port != cson_value_get_integer(cson_object_get(object, "port")))
 	return (0);
       else if (!pkt_info->input && pkt_info->port != cson_value_get_integer(cson_object_get(object, "port")))
