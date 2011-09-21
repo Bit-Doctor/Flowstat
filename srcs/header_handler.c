@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:28:37 2011 Jonathan Machado
-** Last update Mon Sep 19 16:43:29 2011 Jonathan Machado
+** Last update Wed Sep 21 15:13:54 2011 Jonathan Machado
 */
 
 #include <arpa/inet.h>
@@ -13,7 +13,6 @@
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
 #include <netinet/ip_icmp.h>
-#include "cson_amalgamation_core.h"
 #include "libipulog/libipulog.h"
 #include "flowstat.h"
 
@@ -22,75 +21,48 @@ extern struct global_info	info;
 #ifndef DEBUG	/* if the define debug is not set, all packet are loged in json tree */
 		/* if not, fonction of packet_handler_debug.c are used insted */
 
-static void			incr_connection_object(cson_object* ip_flux, cson_object *connection, packet_info *pkt_info)
+static void			update_connection(connection *current_connection, packet_info *pkt_info)
 {
-  int				status;
-  int				prev_occ;
-  int				prev_data;
-
+  current_connection->last_packet = pkt_info->time;
+  if (pkt_info->protocol == IPPROTO_TCP && pkt_info->fin)
+    current_connection->protocol_data.tcp.stts++;
+  if (pkt_info->protocol == IPPROTO_TCP && pkt_info->rst)
+    current_connection->protocol_data.tcp.stts = reseted;
   if (pkt_info->protocol == IPPROTO_TCP || pkt_info->protocol == IPPROTO_UDP)
     {
       if (pkt_info->input)
-  	{
-  	  prev_data = cson_value_get_integer(cson_object_get(connection, "input data"));
-  	  cson_object_set(connection, "input data", cson_value_new_integer(prev_data + pkt_info->data));
-  	}
+  	  current_connection->input_data += pkt_info->data;
       else
-  	{
-  	  prev_data = cson_value_get_integer(cson_object_get(connection, "output data"));
-  	  cson_object_set(connection, "output data", cson_value_new_integer(prev_data + pkt_info->data));
-  	}
+  	  current_connection->output_data += pkt_info->data;
     }
-  cson_object_set(connection, "last packet", cson_value_new_integer(pkt_info->time));
-  cson_object_set(ip_flux, "last connection", cson_value_new_integer(pkt_info->time));
   if (pkt_info->input)
-    {
-      prev_occ = cson_value_get_integer(cson_object_get(connection, "number of input packet"));
-      cson_object_set(connection, "number of input packet", cson_value_new_integer(prev_occ + 1));
-    }
+    current_connection->input_packet++;
   else
-    {
-      prev_occ = cson_value_get_integer(cson_object_get(connection, "number of output packet"));
-      cson_object_set(connection, "number of output packet", cson_value_new_integer(prev_occ + 1));
-    }
-  if (pkt_info->protocol == IPPROTO_TCP && pkt_info->fin)
-    {
-      status = cson_value_get_integer(cson_object_get(connection, "status"));
-      if (status == CLOSED)
-	log_finished_connection(ip_flux, connection);
-      cson_object_set(connection, "status", cson_value_new_integer(++status));
-
-    }
-  if (pkt_info->protocol == IPPROTO_TCP && pkt_info->rst)
-    {
-      cson_object_set(connection, "status", cson_value_new_integer(RESETED));
-      log_finished_connection(ip_flux, connection);
-    }
+    current_connection->output_packet++;
 }
 
-static int			is_the_same_connection(cson_object* object, packet_info *pkt_info)
+static int			is_the_same_connection(connection *current_connection, packet_info *pkt_info)
 {
-  if (pkt_info->protocol != cson_value_get_integer(cson_object_get(object, "protocole")))
+  if (pkt_info->protocol != current_connection->protocol)
     return (0);
   switch (pkt_info->protocol)
     {
     case IPPROTO_ICMP:
-      if (pkt_info->type != cson_value_get_integer(cson_object_get(object, "type")))
+      if (pkt_info->type != current_connection->protocol_data.icmp.type)
 	return (0);
       break;
     case IPPROTO_TCP:
-      if (cson_value_get_integer(cson_object_get(object, "status")) == CLOSED ||
-	  cson_value_get_integer(cson_object_get(object, "status")) == RESETED)
+      if (current_connection->protocol_data.tcp.stts == closed || current_connection->protocol_data.tcp.stts == reseted)
 	return (0);
-      if (pkt_info->input && pkt_info->port != cson_value_get_integer(cson_object_get(object, "port")))
+      if (pkt_info->input && pkt_info->port != current_connection->protocol_data.tcp.port)
 	return (0);
-      else if (!pkt_info->input && pkt_info->port != cson_value_get_integer(cson_object_get(object, "port")))
+      else if (!pkt_info->input && pkt_info->port != current_connection->protocol_data.tcp.port)
 	return (0);
       break;
     case IPPROTO_UDP:
-      if (pkt_info->input && pkt_info->port != cson_value_get_integer(cson_object_get(object, "port")))
+      if (pkt_info->input && pkt_info->port !=  current_connection->protocol_data.udp.port)
 	return (0);
-      else if (!pkt_info->input && pkt_info->port != cson_value_get_integer(cson_object_get(object, "port")))
+      else if (!pkt_info->input && pkt_info->port != current_connection->protocol_data.udp.port)
 	return (0);
     }
   return (1);
@@ -136,6 +108,7 @@ static packet_info		*get_packet_information(ulog_packet_msg_t *pkt)
   struct iphdr			*iph;
 
   pkt_info = xmalloc(sizeof(*pkt_info));
+  memset(pkt_info, 0, sizeof(*pkt_info));
   iph = (struct iphdr *)pkt->payload;
   pkt_info->ip = ntohl(iph->daddr);
   pkt_info->data = ntohs(iph->tot_len);
@@ -161,53 +134,50 @@ static packet_info		*get_packet_information(ulog_packet_msg_t *pkt)
   return (pkt_info);
 }
 
-static void			create_new_connection_object(cson_object *ip_flux, packet_info *pkt_info)
+static void			create_new_connection(flux *current_flux, packet_info *pkt_info)
 {
-  cson_value			*newV;
-  cson_object			*new;
-  cson_array			*connections;
+  connection			*new;
 
-  newV = cson_value_new_object();
-  new = cson_value_get_object(newV);
-  connections = cson_value_get_array(cson_object_get(ip_flux, "connections"));
-  cson_object_set(ip_flux, "last connection", cson_value_new_integer(pkt_info->time));
-  cson_object_set(new, "protocole", cson_value_new_integer(pkt_info->protocol));
+  new = xmalloc(sizeof(*new));
+  memset(new,0, sizeof(*new));
+  new->protocol = pkt_info->protocol;
   switch (pkt_info->protocol)
     {
     case IPPROTO_ICMP:
-      cson_object_set(new, "type", cson_value_new_integer(pkt_info->type));
+      new->protocol_data.icmp.type = pkt_info->type;
       break;
     case IPPROTO_TCP:
-      cson_object_set(new, "port", cson_value_new_integer(pkt_info->port));
-      if (pkt_info->input)
-	cson_object_set(new, "input data", cson_value_new_integer(pkt_info->data));
-      else
-	cson_object_set(new, "output data", cson_value_new_integer(pkt_info->data));
+      new->protocol_data.tcp.port = pkt_info->port;
+      new->protocol_data.tcp.stts = connected;
       break;
     case IPPROTO_UDP:
-      cson_object_set(new, "port", cson_value_new_integer(pkt_info->port));
-      if (pkt_info->input)
-	cson_object_set(new, "input data", cson_value_new_integer(pkt_info->data));
-      else
-	cson_object_set(new, "output data", cson_value_new_integer(pkt_info->data));
+      new->protocol_data.udp.port = pkt_info->port;
       break;
     }
   if (pkt_info->input)
-    cson_object_set(new, "number of input packet", cson_value_new_integer(1));
+    {
+      new->input_data = pkt_info->data;
+      new->input_packet = 1;
+    }
   else
-    cson_object_set(new, "number of output packet", cson_value_new_integer(1));
-  cson_object_set(new, "status", cson_value_new_integer(LINKED));
-  cson_object_set(new, "first packet", cson_value_new_integer(pkt_info->time));
-  cson_object_set(new, "last packet", cson_value_new_integer(pkt_info->time));
-  cson_array_append(connections, newV);
+    {
+      new->output_data = pkt_info->data;
+      new->output_packet = 1;
+    }
+  new->first_packet = pkt_info->time;
+  new->last_packet = pkt_info->time;
+  new->next = NULL;
+  if (current_flux->head == NULL)
+    current_flux->head = new;
+  else
+    current_flux->tail->next = new;
+  current_flux->tail = new;
+  current_flux->number_connections++;
 }
 
-static void			create_new_flux_object(packet_info *pkt_info)
+static void			create_new_flux(packet_info *pkt_info)
 {
-  cson_value		*newV;
-  cson_object		*new;
-  cson_value		*connectionsV;
-  cson_array		*connections;
+  flux			*new;
 #ifdef DNS_ACTIVATE
   struct sockaddr_in	socket;
   char			dns[1024];
@@ -217,52 +187,49 @@ static void			create_new_flux_object(packet_info *pkt_info)
   socket.sin_port = htons(80);
   getnameinfo(&socket, sizeof(socket), dns, sizeof(dns), NULL, 0, 0);
 #endif /* DNS_ACTIVATE */
-  newV = cson_value_new_object();
-  new = cson_value_get_object(newV);
-  connectionsV = cson_value_new_array();
-  connections = cson_value_get_array(connectionsV);
-  cson_object_set(new, "ip", cson_value_new_integer(pkt_info->ip));
+  new = xmalloc(sizeof(*new));
+  memset(new,0, sizeof(*new));
+  new->ip = pkt_info->ip;
 #ifdef DNS_ACTIVATE
-  cson_object_set(new, "hostname", cson_value_new_string(dns, strlen(dns)));
+  new->hostname = strdup(dns);
 #endif /* DNS_ACTIVATE */
-  cson_object_set(new, "first connection", cson_value_new_integer(pkt_info->time));
-  cson_object_set(new, "last connection", cson_value_new_integer(pkt_info->time));
-  cson_object_set(new, "connections", connectionsV);
-
-  cson_array_append(info.flux, newV);
-  create_new_connection_object(new, pkt_info);
+  new->number_connections = 0;
+  new->head = NULL;
+  new->tail = NULL;
+  new->next = NULL;
+  if (info.head == NULL)
+    info.head = new;
+  else
+    info.tail->next = new;
+  info.tail = new;
+  info.number_flux++;
+  create_new_connection(new, pkt_info);
 }
 
-static cson_object		*ip_already_listed(packet_info *pkt_info)
+static flux		*ip_already_listed(packet_info *pkt_info)
 {
-  int			i;
-  int			flux_len;
-  cson_object		*tempO;
+  flux				*current;
 
-  flux_len = cson_array_length_get(info.flux);
-  for (i = 0; i < flux_len; ++i)
+  current = info.head;
+  while (current != NULL)
     {
-      tempO = cson_value_get_object(cson_array_get(info.flux, i));
-      if (pkt_info->ip == cson_value_get_integer(cson_object_get(tempO, "ip")))
-	return (tempO);
+      if (pkt_info->ip == current->ip)
+	return (current);
+      current = current->next;
     }
   return (NULL);
 }
 
-static cson_object		*connection_already_listed(cson_object *flux, packet_info *pkt_info)
+static connection		*connection_already_listed(flux *current_flux, packet_info *pkt_info)
 {
-  int			i;
-  int			connections_len;
-  cson_object		*tempO;
-  cson_array		*tempA;
+  connection			*current;
 
-  tempA =  cson_value_get_array(cson_object_get(flux, "connections"));
-  connections_len = cson_array_length_get(tempA);
-  for (i = 0; i < connections_len; ++i)
+  current = current_flux->head;
+  while (current)
     {
-      tempO = cson_value_get_object(cson_array_get(tempA, i));
-      if (is_the_same_connection(tempO, pkt_info))
-	return (tempO);
+      if (is_the_same_connection(current, pkt_info))
+	return (current);
+      current = current->next;
     }
   return (NULL);
 }
@@ -270,19 +237,19 @@ static cson_object		*connection_already_listed(cson_object *flux, packet_info *p
 void			packet_handler(ulog_packet_msg_t *pkt)
 {
   packet_info		*pkt_info;
-  cson_object		*ip_flux;
-  cson_object		*connection;
+  flux			*listed_flux;
+  connection		*listed_connection;
 
-  pkt_info = get_packet_information(pkt);
-  if ((ip_flux = ip_already_listed(pkt_info)) != NULL)
+  pkt_info = get_packet_information(pkt); /* fill the packet_info structure */
+  if ((listed_flux = ip_already_listed(pkt_info)) != NULL)	 /* if the ip is already listed */
     {
-      if ((connection = connection_already_listed(ip_flux, pkt_info)) != NULL)
-	incr_connection_object(ip_flux, connection, pkt_info);
+      if ((listed_connection = connection_already_listed(listed_flux, pkt_info)) != NULL) /* if the connection i already listed */
+	update_connection(listed_connection, pkt_info); /* update the connection info */
       else
-	create_new_connection_object(ip_flux, pkt_info);
+	create_new_connection(listed_flux, pkt_info); /* else create a new connection info */
     }
   else
-    create_new_flux_object(pkt_info);
+    create_new_flux(pkt_info); /* else create a new flux info */
   free(pkt_info);
 }
 
