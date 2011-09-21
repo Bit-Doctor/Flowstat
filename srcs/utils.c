@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Tue Sep 20 11:22:53 2011 Jonathan Machado
-** Last update Tue Sep 20 12:35:55 2011 Jonathan Machado
+** Last update Wed Sep 21 17:44:18 2011 Jonathan Machado
 */
 
 #include <sys/socket.h>
@@ -57,7 +57,11 @@ int			demonize()
     exit(EXIT_SUCCESS);		/* parent exits */
   setsid();			/* obtain a new process group */
   umask(027);			/* set newly created file permissions */
-  chdir("/tmp");       		/* change running directory */
+  if (chdir("/tmp") < 0)   		/* change running directory */
+    {
+      flowstat_perror("chdir");
+      exit(EXIT_FAILURE);
+    }
   if ((fd = open("flowstat.lock", O_RDWR | O_CREAT, 0640)) < 0)
     {
       flowstat_perror("open");
@@ -66,7 +70,11 @@ int			demonize()
   if (lockf(fd, F_TLOCK, 0) < 0)
     return (0); 		/* another instance is already running */
   sprintf(str,"%d\n", getpid());
-  write(fd, str, strlen(str)); /* record pid to lockfile */
+  if (write(fd, str, strlen(str)) < 0) /* record pid to lockfile */
+    {
+      flowstat_perror("write");
+      exit(EXIT_FAILURE);
+    }
   signal(SIGTSTP, SIG_IGN);	/* ignore tty signals */
   signal(SIGTTOU, SIG_IGN);
   signal(SIGTTIN, SIG_IGN);

@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:24:24 2011 Jonathan Machado
-** Last update Wed Sep 21 09:26:57 2011 Jonathan Machado
+** Last update Wed Sep 21 17:48:31 2011 Jonathan Machado
 */
 
 #ifndef __FLOWSTAT_H__
@@ -129,7 +129,8 @@ struct		global_info
 */
 
 void			*xmalloc(int);
-void			packet_handler(ulog_packet_msg_t*);	/* all the logging system is here */
+void			packet_handler(ulog_packet_msg_t*);	/* all the packet graber system is here */
+void			flush_closed_connection(void);		/* flush closed connection into the log file */
 int			get_local_ip(void);			/* return local ip of INTERFACE */
 int			demonize(void);				/* return -1 if another instance is running and 0 if not */
 struct ipulog_handle    *verified_ipulog_create_handle(u_int32_t, u_int32_t);
