@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Fri Sep  2 12:00:57 2011 Jonathan Machado
-** Last update Wed Sep 21 15:16:59 2011 Jonathan Machado
+** Last update Wed Sep 21 15:52:15 2011 Jonathan Machado
 */
 
 #include <arpa/inet.h>
@@ -27,8 +27,11 @@ char			*get_line_info(flux *flx, connection *cnt)
   char			*ret;
   char			*date;
 
+  len = 0;
   ret = xmalloc(512 * sizeof(*ret));
-  len = sprintf(ret, "%u.%u.%u.%u|", INTTOIP(flx->ip));
+  if (cnt->protocol == IPPROTO_TCP && cnt->protocol_data.tcp.stts == reseted)
+    len += sprintf(&ret[len], "[RESETED]");
+  len += sprintf(&ret[len], "%u.%u.%u.%u|", INTTOIP(flx->ip));
 #ifdef DNS_ACTIVATE
   len += sprintf(&ret[len], "%s|", flx->hostname);
 #endif	/* DNS_ACTIVATE */
