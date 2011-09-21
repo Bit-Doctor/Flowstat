@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:28:37 2011 Jonathan Machado
-** Last update Tue Sep 20 12:35:25 2011 Jonathan Machado
+** Last update Wed Sep 21 09:36:03 2011 Jonathan Machado
 */
 
 #include <arpa/inet.h>
@@ -21,7 +21,7 @@ extern struct global_info	info;
 #ifndef DEBUG	/* if the define debug is not set, all packet are loged in json tree */
 		/* if not, fonction of packet_handler_debug.c are used insted */
 
-static void			incr_connection_object(connection *current_connection, packet_info *pkt_info)
+static void			update_connection(connection *current_connection, packet_info *pkt_info)
 {
   current_connection->last_packet = pkt_info->time;
   if (pkt_info->protocol == IPPROTO_TCP && pkt_info->fin)
@@ -133,7 +133,7 @@ static packet_info		*get_packet_information(ulog_packet_msg_t *pkt)
   return (pkt_info);
 }
 
-static void			create_new_connection_object(flux *current_flux, packet_info *pkt_info)
+static void			create_new_connection(flux *current_flux, packet_info *pkt_info)
 {
   connection			*new;
 
@@ -166,19 +166,14 @@ static void			create_new_connection_object(flux *current_flux, packet_info *pkt_
   new->last_packet = pkt_info->time;
   new->next = NULL;
   if (current_flux->head == NULL)
-    {
-      current_flux->head = new;
-      current_flux->tail = new;
-    }
+    current_flux->head = new;
   else
-    {
-      current_flux->tail->next = new;
-      current_flux->tail = new;
-    }
+    current_flux->tail->next = new;
+  current_flux->tail = new;
   current_flux->number_connections++;
 }
 
-static void			create_new_flux_object(packet_info *pkt_info)
+static void			create_new_flux(packet_info *pkt_info)
 {
   flux			*new;
 #ifdef DNS_ACTIVATE
@@ -200,17 +195,12 @@ static void			create_new_flux_object(packet_info *pkt_info)
   new->tail = NULL;
   new->next = NULL;
   if (info.head == NULL)
-    {
-      info.head = new;
-      info.tail = new;
-    }
+    info.head = new;
   else
-    {
-      info.tail->next = new;
-      info.tail = new;
-    }
+    info.tail->next = new;
+  info.tail = new;
   info.number_flux++;
-  create_new_connection_object(new, pkt_info);
+  create_new_connection(new, pkt_info);
 }
 
 static flux		*ip_already_listed(packet_info *pkt_info)
@@ -247,16 +237,16 @@ void			packet_handler(ulog_packet_msg_t *pkt)
   flux			*listed_flux;
   connection		*listed_connection;
 
-  pkt_info = get_packet_information(pkt);
-  if ((listed_flux = ip_already_listed(pkt_info)) != NULL)
+  pkt_info = get_packet_information(pkt); /* fill the packet_info structure */
+  if ((listed_flux = ip_already_listed(pkt_info)) != NULL)	 /* if the ip is already listed */
     {
-      if ((listed_connection = connection_already_listed(listed_flux, pkt_info)) != NULL)
-	incr_connection_object(listed_connection, pkt_info);
+      if ((listed_connection = connection_already_listed(listed_flux, pkt_info)) != NULL) /* if the connection i already listed */
+	update_connection(listed_connection, pkt_info); /* update the connection info */
       else
-	create_new_connection_object(listed_flux, pkt_info);
+	create_new_connection(listed_flux, pkt_info); /* else create a new connection info */
     }
   else
-    create_new_flux_object(pkt_info);
+    create_new_flux(pkt_info); /* else create a new flux info */
   free(pkt_info);
 }
 

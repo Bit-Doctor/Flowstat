@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:24:24 2011 Jonathan Machado
-** Last update Tue Sep 20 12:32:48 2011 Jonathan Machado
+** Last update Wed Sep 21 09:26:57 2011 Jonathan Machado
 */
 
 #ifndef __FLOWSTAT_H__
@@ -24,7 +24,6 @@
 # include <string.h>
 # include <time.h>
 
-# include "cson_amalgamation_core.h"
 # include "libipulog/libipulog.h"
 
 

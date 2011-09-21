@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Fri Sep  2 12:00:57 2011 Jonathan Machado
-** Last update Tue Sep 20 12:20:07 2011 Jonathan Machado
+** Last update Wed Sep 21 09:42:39 2011 Jonathan Machado
 */
 
 #include <syslog.h>
@@ -18,10 +18,12 @@ void			free_at_interupt(int signum)
 {
   free(info.buffer);
   ipulog_destroy_handle(info.connection);
-  /* free list chainer */
+  free_flux_list(info.head);
   closelog();
   exit(EXIT_SUCCESS);
 }
+
+
 
 void			read_and_analyze(struct ipulog_handle *h)
 {
