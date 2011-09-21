@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:28:37 2011 Jonathan Machado
-** Last update Wed Sep 21 09:36:03 2011 Jonathan Machado
+** Last update Wed Sep 21 14:19:07 2011 Jonathan Machado
 */
 
 #include <arpa/inet.h>
@@ -108,6 +108,7 @@ static packet_info		*get_packet_information(ulog_packet_msg_t *pkt)
   struct iphdr			*iph;
 
   pkt_info = xmalloc(sizeof(*pkt_info));
+  memset(pkt_info, 0, sizeof(*pkt_info));
   iph = (struct iphdr *)pkt->payload;
   pkt_info->ip = ntohl(iph->daddr);
   pkt_info->data = ntohs(iph->tot_len);
@@ -138,6 +139,7 @@ static void			create_new_connection(flux *current_flux, packet_info *pkt_info)
   connection			*new;
 
   new = xmalloc(sizeof(*new));
+  memset(new,0, sizeof(*new));
   new->protocol = pkt_info->protocol;
   switch (pkt_info->protocol)
     {
@@ -186,6 +188,7 @@ static void			create_new_flux(packet_info *pkt_info)
   getnameinfo(&socket, sizeof(socket), dns, sizeof(dns), NULL, 0, 0);
 #endif /* DNS_ACTIVATE */
   new = xmalloc(sizeof(*new));
+  memset(new,0, sizeof(*new));
   new->ip = pkt_info->ip;
 #ifdef DNS_ACTIVATE
   new->hostname = strdup(dns);

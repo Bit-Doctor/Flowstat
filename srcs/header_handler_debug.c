@@ -5,20 +5,16 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Thu Sep  8 17:18:41 2011 Jonathan Machado
-** Last update Fri Sep  9 12:59:06 2011 Jonathan Machado
+** Last update Wed Sep 21 10:52:53 2011 Jonathan Machado
 */
 
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
 #include <netinet/ip_icmp.h>
-#include "cson_amalgamation_core.h"
+
 #include "libipulog/libipulog.h"
 #include "flowstat.h"
-
-extern cson_value		*rootV;
-extern cson_object		*root;
-extern cson_array		*ips;
 
 #ifdef	DEBUG
 /*
