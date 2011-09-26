@@ -5,33 +5,26 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep 21 09:41:42 2011 Jonathan Machado
-** Last update Wed Sep 21 10:52:03 2011 Jonathan Machado
+** Last update Mon Sep 26 11:30:08 2011 Jonathan Machado
 */
 
+#include <stdlib.h>
 #include "flowstat.h"
 
-void			delete_connection(flux *current_flux, connection *prev, connection *delete)
+extern struct global_info	info;
+
+void			delete_flux(connection *current_connection, flux *prev, flux *delete)
 {
   if (delete != NULL)
     {
       if (prev == NULL)
-	current_flux->head = delete->next;
+	current_connection->head = delete->next;
       else
 	prev->next = delete->next;
       if (delete->next == NULL)
-	current_flux->tail = prev;
-      current_flux->number_connections--;
+	current_connection->tail = prev;
+      current_connection->number_fluxs--;
       free(delete);
-    }
-}
-
-void			free_connection_list(connection *head)
-{
-  if (head != NULL)
-    {
-      if (head->next != NULL)
-	free_connection_list(head->next);
-      free(head);
     }
 }
 
@@ -41,10 +34,19 @@ void			free_flux_list(flux *head)
     {
       if (head->next != NULL)
 	free_flux_list(head->next);
-#ifdef DNS_ACTIVATE
-      free(head->hostname);
-#endif	/* DNS_ACTIVATE */
-      free_connection_list(head->head);
+      free(head);
+    }
+}
+
+void			free_connection_list(connection *head)
+{
+  if (head != NULL)
+    {
+      if (head->next != NULL)
+	free_connection_list(head->next);
+      if (info.options.dns)
+	free(head->hostname);
+      free_flux_list(head->head);
       free(head);
     }
 }

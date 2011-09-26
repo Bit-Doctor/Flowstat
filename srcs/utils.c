@@ -5,15 +5,21 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Tue Sep 20 11:22:53 2011 Jonathan Machado
-** Last update Wed Sep 21 17:44:18 2011 Jonathan Machado
+** Last update Mon Sep 26 11:31:48 2011 Jonathan Machado
 */
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <net/if.h>
 #include <ifaddrs.h>
-#include <signal.h>
 #include "flowstat.h"
 
 int			get_local_ip(void)
@@ -22,6 +28,7 @@ int			get_local_ip(void)
   struct ifaddrs	*myaddrs, *ifa;
   struct sockaddr_in	*socket;
 
+  ret = 0;
   if(getifaddrs(&myaddrs) != 0)
     {
       flowstat_perror("getifaddrs");

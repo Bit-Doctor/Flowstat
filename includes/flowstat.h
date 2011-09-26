@@ -5,28 +5,14 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:24:24 2011 Jonathan Machado
-** Last update Wed Sep 21 17:48:31 2011 Jonathan Machado
+** Last update Mon Sep 26 11:42:36 2011 Jonathan Machado
 */
 
 #ifndef __FLOWSTAT_H__
 # define __FLOWSTAT_H__
 
-/*
-**
-**		HEADER UTILS
-**
-*/
-
-# include <errno.h>
 # include <unistd.h>
-# include <stdio.h>
-# include <stdlib.h>
-# include <string.h>
-# include <time.h>
-
 # include "libipulog/libipulog.h"
-
-
 /*
 **
 **		DEFINE
@@ -38,11 +24,12 @@
 # define BUFFER_SIZE		2048
 # define GROUP_NETLINK		1	/* Group link for the connection to iptables, by default 1 */
 # define INTERFACE		"eth0"	/* Wich interface flowstat must keep the ip */
+# define LOCALIP		16777303 /* 127.0.0.1 */
 # define INTTOIP(addr) ((unsigned char *)&addr)[3], ((unsigned char *)&addr)[2], \
     ((unsigned char *)&addr)[1], ((unsigned char *)&addr)[0]
 /*
 **
-**		STRUCTURE
+**		ENUM
 **
 */
 
@@ -73,7 +60,7 @@ typedef struct	packet_info
   u_int8_t		rst;
 }		packet_info;
 
-typedef struct        	connection
+typedef struct        	flux
 {
   u_int16_t		protocol;
   time_t       	       	first_packet;
@@ -98,28 +85,33 @@ typedef struct        	connection
       status		stts;
     }	       		tcp;
   }    	       	       	protocol_data;
-  struct connection	*next;
-}     	     		connection;
+  struct flux		*next;
+}     	     		flux;
 
-typedef struct		flux
+typedef struct		connection
 {
   u_int32_t		ip;
   char			*hostname;
-  int			number_connections;
-  struct connection	*head;
-  struct connection	*tail;
-  struct flux		*next;
-}			flux;
+  int			number_fluxs;
+  struct flux		*head;
+  struct flux		*tail;
+  struct connection		*next;
+}			connection;
 
 
 struct		global_info
 {
-  int			local_ip;
-  char			*buffer;
+  struct
+  {
+    char		advanced;
+    char		dns;
+  }			options;
+  u_int32_t			local_ip;
+  unsigned char			*buffer;
   struct ipulog_handle	*connection;
-  int			number_flux;
-  struct flux		*head;
-  struct flux		*tail;
+  int			number_connection;
+  struct connection    	*head;
+  struct connection    	*tail;
 };
 
 /*
@@ -129,10 +121,14 @@ struct		global_info
 */
 
 void			*xmalloc(int);
+void			flush_closed_flux(void);
+void			delete_flux(connection *current_connection, flux *prev, flux *delete);
+void			free_connection_list(connection *head);
 void			packet_handler(ulog_packet_msg_t*);	/* all the packet graber system is here */
 void			flush_closed_connection(void);		/* flush closed connection into the log file */
+void			flowstat_perror(char *str);		/* log error message with syslog/print on stdout if DEGUG is defne */
 int			get_local_ip(void);			/* return local ip of INTERFACE */
 int			demonize(void);				/* return -1 if another instance is running and 0 if not */
 struct ipulog_handle    *verified_ipulog_create_handle(u_int32_t, u_int32_t);
 
-#endif
+#endif	/* __FLOWSTAT_H__*/

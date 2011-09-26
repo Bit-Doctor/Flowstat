@@ -5,9 +5,15 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:28:37 2011 Jonathan Machado
-** Last update Wed Sep 21 15:13:54 2011 Jonathan Machado
+** Last update Mon Sep 26 11:44:10 2011 Jonathan Machado
 */
 
+
+#include <string.h>
+#include <stdlib.h>
+#include <time.h>
+#include <sys/socket.h>
+#include <netdb.h>
 #include <arpa/inet.h>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
@@ -21,48 +27,48 @@ extern struct global_info	info;
 #ifndef DEBUG	/* if the define debug is not set, all packet are loged in json tree */
 		/* if not, fonction of packet_handler_debug.c are used insted */
 
-static void			update_connection(connection *current_connection, packet_info *pkt_info)
+static void			update_flux(flux *current_flux, packet_info *pkt_info)
 {
-  current_connection->last_packet = pkt_info->time;
+  current_flux->last_packet = pkt_info->time;
   if (pkt_info->protocol == IPPROTO_TCP && pkt_info->fin)
-    current_connection->protocol_data.tcp.stts++;
+    current_flux->protocol_data.tcp.stts++;
   if (pkt_info->protocol == IPPROTO_TCP && pkt_info->rst)
-    current_connection->protocol_data.tcp.stts = reseted;
+    current_flux->protocol_data.tcp.stts = reseted;
   if (pkt_info->protocol == IPPROTO_TCP || pkt_info->protocol == IPPROTO_UDP)
     {
       if (pkt_info->input)
-  	  current_connection->input_data += pkt_info->data;
+  	  current_flux->input_data += pkt_info->data;
       else
-  	  current_connection->output_data += pkt_info->data;
+  	  current_flux->output_data += pkt_info->data;
     }
   if (pkt_info->input)
-    current_connection->input_packet++;
+    current_flux->input_packet++;
   else
-    current_connection->output_packet++;
+    current_flux->output_packet++;
 }
 
-static int			is_the_same_connection(connection *current_connection, packet_info *pkt_info)
+static int			is_the_same_flux(flux *current_flux, packet_info *pkt_info)
 {
-  if (pkt_info->protocol != current_connection->protocol)
+  if (pkt_info->protocol != current_flux->protocol)
     return (0);
   switch (pkt_info->protocol)
     {
     case IPPROTO_ICMP:
-      if (pkt_info->type != current_connection->protocol_data.icmp.type)
+      if (pkt_info->type != current_flux->protocol_data.icmp.type)
 	return (0);
       break;
     case IPPROTO_TCP:
-      if (current_connection->protocol_data.tcp.stts == closed || current_connection->protocol_data.tcp.stts == reseted)
+      if (current_flux->protocol_data.tcp.stts == closed || current_flux->protocol_data.tcp.stts == reseted)
 	return (0);
-      if (pkt_info->input && pkt_info->port != current_connection->protocol_data.tcp.port)
+      if (pkt_info->input && pkt_info->port != current_flux->protocol_data.tcp.port)
 	return (0);
-      else if (!pkt_info->input && pkt_info->port != current_connection->protocol_data.tcp.port)
+      else if (!pkt_info->input && pkt_info->port != current_flux->protocol_data.tcp.port)
 	return (0);
       break;
     case IPPROTO_UDP:
-      if (pkt_info->input && pkt_info->port !=  current_connection->protocol_data.udp.port)
+      if (pkt_info->input && pkt_info->port !=  current_flux->protocol_data.udp.port)
 	return (0);
-      else if (!pkt_info->input && pkt_info->port != current_connection->protocol_data.udp.port)
+      else if (!pkt_info->input && pkt_info->port != current_flux->protocol_data.udp.port)
 	return (0);
     }
   return (1);
@@ -70,7 +76,7 @@ static int			is_the_same_connection(connection *current_connection, packet_info 
 
 static void			icmpheader_handler(void *protocol_header, packet_info *pkt_info)
 {
-  struct icmphdr		*icmph;
+  struct icmphdr		*icmph = NULL;
 
   icmph = protocol_header;
   pkt_info->type = icmph->type;
@@ -78,11 +84,11 @@ static void			icmpheader_handler(void *protocol_header, packet_info *pkt_info)
 
 static void			tcpheader_handler(void *protocol_header, packet_info *pkt_info)
 {
-  struct tcphdr			*tcph;
+  struct tcphdr			*tcph = NULL;
 
   tcph = protocol_header;
   if (pkt_info->input)
-    pkt_info->port = ntohs(tcph->source);
+    pkt_info->port = (u_int16_t)ntohs(tcph->source);
   else
     pkt_info->port = ntohs(tcph->dest);
   if (tcph->fin)
@@ -93,7 +99,7 @@ static void			tcpheader_handler(void *protocol_header, packet_info *pkt_info)
 
 static void			udpheader_handler(void *protocol_header, packet_info *pkt_info)
 {
-  struct udphdr			*udph;
+  struct udphdr			*udph = NULL;
 
   udph = protocol_header;
   if (pkt_info->input)
@@ -104,15 +110,15 @@ static void			udpheader_handler(void *protocol_header, packet_info *pkt_info)
 
 static packet_info		*get_packet_information(ulog_packet_msg_t *pkt)
 {
-  packet_info			*pkt_info;
-  struct iphdr			*iph;
+  packet_info			*pkt_info = NULL;
+  struct iphdr			*iph = NULL;
 
   pkt_info = xmalloc(sizeof(*pkt_info));
   memset(pkt_info, 0, sizeof(*pkt_info));
   iph = (struct iphdr *)pkt->payload;
   pkt_info->ip = ntohl(iph->daddr);
   pkt_info->data = ntohs(iph->tot_len);
-  if (ntohl(iph->daddr) == info.local_ip)
+  if (ntohl(iph->daddr) == info.local_ip && ntohl(iph->daddr) == LOCALIP)
     {
       pkt_info->ip = ntohl(iph->saddr);
       pkt_info->input = 1;
@@ -134,9 +140,9 @@ static packet_info		*get_packet_information(ulog_packet_msg_t *pkt)
   return (pkt_info);
 }
 
-static void			create_new_connection(flux *current_flux, packet_info *pkt_info)
+static void			create_new_flux(connection *current_connection, packet_info *pkt_info)
 {
-  connection			*new;
+  flux			*new = NULL;
 
   new = xmalloc(sizeof(*new));
   memset(new,0, sizeof(*new));
@@ -167,33 +173,33 @@ static void			create_new_connection(flux *current_flux, packet_info *pkt_info)
   new->first_packet = pkt_info->time;
   new->last_packet = pkt_info->time;
   new->next = NULL;
-  if (current_flux->head == NULL)
-    current_flux->head = new;
+  if (current_connection->head == NULL)
+    current_connection->head = new;
   else
-    current_flux->tail->next = new;
-  current_flux->tail = new;
-  current_flux->number_connections++;
+    current_connection->tail->next = new;
+  current_connection->tail = new;
+  current_connection->number_fluxs++;
 }
 
-static void			create_new_flux(packet_info *pkt_info)
+static void			create_new_connection(packet_info *pkt_info)
 {
-  flux			*new;
-#ifdef DNS_ACTIVATE
-  struct sockaddr_in	socket;
-  char			dns[1024];
+  connection			*new = NULL;
+  struct sockaddr_in		socket;
+  char				dns[1024];
 
-  socket.sin_family = AF_INET;
-  socket.sin_addr.s_addr = htonl(pkt_info->ip);
-  socket.sin_port = htons(80);
-  getnameinfo(&socket, sizeof(socket), dns, sizeof(dns), NULL, 0, 0);
-#endif /* DNS_ACTIVATE */
+  if (info.options.dns)
+    {
+      socket.sin_family = AF_INET;
+      socket.sin_addr.s_addr = htonl(pkt_info->ip);
+      socket.sin_port = htons(80);
+      getnameinfo((const struct sockaddr *)&socket, sizeof(socket), dns, sizeof(dns), NULL, 0, 0);
+    }
   new = xmalloc(sizeof(*new));
   memset(new,0, sizeof(*new));
   new->ip = pkt_info->ip;
-#ifdef DNS_ACTIVATE
-  new->hostname = strdup(dns);
-#endif /* DNS_ACTIVATE */
-  new->number_connections = 0;
+  if (info.options.dns)
+    new->hostname = strdup(dns);
+  new->number_fluxs = 0;
   new->head = NULL;
   new->tail = NULL;
   new->next = NULL;
@@ -202,13 +208,13 @@ static void			create_new_flux(packet_info *pkt_info)
   else
     info.tail->next = new;
   info.tail = new;
-  info.number_flux++;
-  create_new_connection(new, pkt_info);
+  info.number_connection++;
+  create_new_flux(new, pkt_info);
 }
 
-static flux		*ip_already_listed(packet_info *pkt_info)
+static connection		*ip_already_listed(packet_info *pkt_info)
 {
-  flux				*current;
+  connection				*current = NULL;
 
   current = info.head;
   while (current != NULL)
@@ -220,14 +226,14 @@ static flux		*ip_already_listed(packet_info *pkt_info)
   return (NULL);
 }
 
-static connection		*connection_already_listed(flux *current_flux, packet_info *pkt_info)
+static flux		*flux_already_listed(connection *current_connection, packet_info *pkt_info)
 {
-  connection			*current;
+  flux			*current = NULL;
 
-  current = current_flux->head;
+  current = current_connection->head;
   while (current)
     {
-      if (is_the_same_connection(current, pkt_info))
+      if (is_the_same_flux(current, pkt_info))
 	return (current);
       current = current->next;
     }
@@ -236,21 +242,22 @@ static connection		*connection_already_listed(flux *current_flux, packet_info *p
 
 void			packet_handler(ulog_packet_msg_t *pkt)
 {
-  packet_info		*pkt_info;
-  flux			*listed_flux;
-  connection		*listed_connection;
+  packet_info		*pkt_info = NULL;
+  connection	       	*listed_connection = NULL;
+  flux			*listed_flux = NULL;
 
   pkt_info = get_packet_information(pkt); /* fill the packet_info structure */
-  if ((listed_flux = ip_already_listed(pkt_info)) != NULL)	 /* if the ip is already listed */
+  if ((listed_connection = ip_already_listed(pkt_info)) != NULL)	 /* if the ip is already listed */
     {
-      if ((listed_connection = connection_already_listed(listed_flux, pkt_info)) != NULL) /* if the connection i already listed */
-	update_connection(listed_connection, pkt_info); /* update the connection info */
+      if ((listed_flux = flux_already_listed(listed_connection, pkt_info)) != NULL) /* if the flux i already listed */
+	update_flux(listed_flux, pkt_info); /* update the flux info */
       else
-	create_new_connection(listed_flux, pkt_info); /* else create a new connection info */
+	create_new_flux(listed_connection, pkt_info); /* else create a new flux info */
     }
   else
-    create_new_flux(pkt_info); /* else create a new flux info */
+    create_new_connection(pkt_info); /* else create a new connection info */
   free(pkt_info);
+  pkt_info = NULL;
 }
 
 #endif /* DEBUG */

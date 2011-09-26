@@ -5,9 +5,11 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:30:08 2011 Jonathan Machado
-** Last update Fri Sep 16 10:30:15 2011 Jonathan Machado
+** Last update Mon Sep 26 11:05:42 2011 Jonathan Machado
 */
 
+#include <stdlib.h>
+#include <stdio.h>
 #include <syslog.h>
 #include "flowstat.h"
 #include "libipulog/libipulog.h"
