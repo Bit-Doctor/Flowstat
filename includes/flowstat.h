@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:24:24 2011 Jonathan Machado
-** Last update Mon Sep 26 11:42:36 2011 Jonathan Machado
+** Last update Thu Sep 29 11:34:00 2011 Jonathan Machado
 */
 
 #ifndef __FLOWSTAT_H__
@@ -60,6 +60,16 @@ typedef struct	packet_info
   u_int8_t		rst;
 }		packet_info;
 
+struct			flux_stat
+{
+  u_int32_t		ok;
+  u_int32_t		ko;
+  u_int32_t		udp;
+  u_int32_t		icmp;
+  u_int32_t		other;
+  struct flux		*last_ko;
+};
+
 typedef struct        	flux
 {
   u_int16_t		protocol;
@@ -92,27 +102,28 @@ typedef struct		connection
 {
   u_int32_t		ip;
   char			*hostname;
-  int			number_fluxs;
+  u_int32_t    		number_flow;
+  struct flux_stat	stat;
   struct flux		*head;
   struct flux		*tail;
-  struct connection		*next;
+  struct connection    	*next;
 }			connection;
 
-
-struct		global_info
+struct			global_info
 {
   struct
   {
     char		advanced;
     char		dns;
   }			options;
-  u_int32_t			local_ip;
-  unsigned char			*buffer;
+  u_int32_t	       	local_ip;
+  unsigned char	       	*buffer;
   struct ipulog_handle	*connection;
-  int			number_connection;
+  u_int32_t    		number_connection;
   struct connection    	*head;
   struct connection    	*tail;
 };
+
 
 /*
 **
@@ -121,14 +132,16 @@ struct		global_info
 */
 
 void			*xmalloc(int);
-void			flush_closed_flux(void);
+void			free_at_interupt(int signum);
 void			delete_flux(connection *current_connection, flux *prev, flux *delete);
 void			free_connection_list(connection *head);
-void			packet_handler(ulog_packet_msg_t*);	/* all the packet graber system is here */
-void			flush_closed_connection(void);		/* flush closed connection into the log file */
+void			*read_and_analyze(void *ptr);
+void			*flush_and_calc(void *ptr);
+void			flush_closed_connection(void);		/* flush closed connection into the stat structure */
 void			flowstat_perror(char *str);		/* log error message with syslog/print on stdout if DEGUG is defne */
 int			get_local_ip(void);			/* return local ip of INTERFACE */
 int			demonize(void);				/* return -1 if another instance is running and 0 if not */
 struct ipulog_handle    *verified_ipulog_create_handle(u_int32_t, u_int32_t);
+flux			*extract_flux(connection *current_connection, flux *prev, flux *delete);
 
 #endif	/* __FLOWSTAT_H__*/

@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:30:08 2011 Jonathan Machado
-** Last update Mon Sep 26 11:05:42 2011 Jonathan Machado
+** Last update Wed Sep 28 09:45:00 2011 Jonathan Machado
 */
 
 #include <stdlib.h>
@@ -43,11 +43,10 @@ struct ipulog_handle    *verified_ipulog_create_handle(u_int32_t group_mask, u_i
   struct ipulog_handle  *handler;
 
   handler = ipulog_create_handle(group_mask, rcvbufsize);
-  if (!handler)
-    {
-      flowstat_perror(NULL);
-      exit(EXIT_FAILURE);
-    }
+  if (!handler) {
+    flowstat_perror(NULL);
+    exit(EXIT_FAILURE);
+  }
   return (handler);
 }
 
@@ -56,10 +55,9 @@ void			*xmalloc(int size)
   void			*ret;
 
   ret = malloc(size);
-  if (ret == NULL)
-    {
-      flowstat_perror("malloc");
-      exit(EXIT_FAILURE);
-    }
+  if (ret == NULL) {
+    flowstat_perror("malloc");
+    exit(EXIT_FAILURE);
+  }
   return (ret);
 }

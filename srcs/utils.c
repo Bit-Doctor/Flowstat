@@ -5,13 +5,14 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Tue Sep 20 11:22:53 2011 Jonathan Machado
-** Last update Mon Sep 26 11:31:48 2011 Jonathan Machado
+** Last update Thu Sep 29 11:36:38 2011 Jonathan Machado
 */
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <syslog.h>
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -21,6 +22,8 @@
 #include <net/if.h>
 #include <ifaddrs.h>
 #include "flowstat.h"
+
+extern struct global_info	info;
 
 int			get_local_ip(void)
 {
@@ -39,7 +42,7 @@ int			get_local_ip(void)
       if (ifa->ifa_addr != NULL && ifa->ifa_addr->sa_family == AF_INET)
         {
           socket = (struct sockaddr_in *)ifa->ifa_addr;
-          if (strcmp(ifa->ifa_name, "eth0") == 0) /* keep the ip of INTERFACE */
+          if (strcmp(ifa->ifa_name, INTERFACE) == 0) /* keep the ip of INTERFACE */
             ret = socket->sin_addr.s_addr;
 	}
     }
@@ -54,36 +57,53 @@ int			demonize()
   char			str[10];
 
   if(getppid() == 1)
-    return (1);			/* already a daemon */
-  if ((pid = fork()) < 0)
-    {
-      flowstat_perror("fork");
-      exit(EXIT_FAILURE);
-    }
+    return (1);				/* already a daemon */
+  if ((pid = fork()) < 0) {
+    flowstat_perror("fork");
+    exit(EXIT_FAILURE);
+  }
+  /*
+  ** exit the parent
+  ** then obtain a new process group
+  ** and set newly created file permissions
+  ** then change running directory
+  */
   if (pid > 0)
-    exit(EXIT_SUCCESS);		/* parent exits */
-  setsid();			/* obtain a new process group */
-  umask(027);			/* set newly created file permissions */
-  if (chdir("/tmp") < 0)   		/* change running directory */
-    {
-      flowstat_perror("chdir");
-      exit(EXIT_FAILURE);
-    }
-  if ((fd = open("flowstat.lock", O_RDWR | O_CREAT, 0640)) < 0)
-    {
-      flowstat_perror("open");
-      exit(EXIT_FAILURE);
-    }
+    exit(EXIT_SUCCESS);
+  setsid();
+  umask(027);
+  if (chdir("/tmp") < 0) {
+    flowstat_perror("chdir");
+    exit(EXIT_FAILURE);
+  }
+  if ((fd = open("flowstat.lock", O_RDWR | O_CREAT, 0640)) < 0) {
+    flowstat_perror("open");
+    exit(EXIT_FAILURE);
+  }
+  /* try to lockfile if it's fail another instance is already running
+  ** else record pid to lockfile
+  ** and ignore tty signals
+  */
   if (lockf(fd, F_TLOCK, 0) < 0)
-    return (0); 		/* another instance is already running */
+    return (0);
   sprintf(str,"%d\n", getpid());
-  if (write(fd, str, strlen(str)) < 0) /* record pid to lockfile */
-    {
-      flowstat_perror("write");
-      exit(EXIT_FAILURE);
-    }
-  signal(SIGTSTP, SIG_IGN);	/* ignore tty signals */
+  if (write(fd, str, strlen(str)) < 0) {
+    flowstat_perror("write");
+    exit(EXIT_FAILURE);
+  }
+  signal(SIGTSTP, SIG_IGN);
   signal(SIGTTOU, SIG_IGN);
   signal(SIGTTIN, SIG_IGN);
   return (1);
+}
+
+void			free_at_interupt(int signum)
+{
+  (void)signum;
+  free(info.buffer);
+  info.buffer = NULL;
+  ipulog_destroy_handle(info.connection);
+  free_connection_list(info.head);
+  closelog();
+  exit(EXIT_SUCCESS);
 }
