@@ -5,13 +5,14 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep 21 17:45:46 2011 Jonathan Machado
-** Last update Thu Sep 29 17:23:48 2011 Jonathan Machado
+** Last update Tue Oct  4 15:00:34 2011 Jonathan Machado
 */
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <pthread.h>
 #include <time.h>
 #include <arpa/inet.h>
 #include <netinet/ip.h>
@@ -33,10 +34,11 @@ static void	       	update_stat(connection *cnt, flux *flx)
       if (flx->protocol_data.tcp.stts == closed) {
 	stat->ok++;
       } else {
-	stat->ko++;
+	++stat->ko;
+	printf("%i %p\n", stat->ko, stat->last_ko);
 	free(stat->last_ko);
-	stat->last_ko = xmalloc(sizeof(*flx));
-	stat->last_ko = memcpy(flx, stat->last_ko, sizeof(flx));
+	stat->last_ko = xmalloc(sizeof(flux));
+	stat->last_ko = memcpy(stat->last_ko, flx, sizeof(flux));
       }
       break;
     case IPPROTO_ICMP:
@@ -59,21 +61,24 @@ static void		flush_closed_flux(void)
   flux			*extract = NULL;
 
   for (cur_connection = info.head; cur_connection != NULL; cur_connection = cur_connection->next) {
-    for (prev_flux = NULL, cur_flux = cur_connection->head; cur_flux != NULL;) {
-      if (!(cur_flux->protocol == IPPROTO_TCP &&
-	    (cur_flux->protocol_data.tcp.stts != reseted &&
-	     cur_flux->protocol_data.tcp.stts != closed))) {
-	extract = extract_flux(cur_connection, prev_flux, cur_flux);
-	update_stat(cur_connection, extract);
-	free(extract);
-	extract = NULL;
-	cur_flux = prev_flux;
+    if (pthread_mutex_trylock(&cur_connection->lock) == 0) {
+      for (prev_flux = NULL, cur_flux = cur_connection->head; cur_flux != NULL;) {
+	if (!(cur_flux->protocol == IPPROTO_TCP &&
+	      (cur_flux->protocol_data.tcp.stts != reseted &&
+	       cur_flux->protocol_data.tcp.stts != closed))) {
+	  extract = extract_flux(cur_connection, prev_flux, cur_flux);
+	  update_stat(cur_connection, extract);
+	  free(extract);
+	  extract = NULL;
+	  cur_flux = prev_flux;
+	}
+	prev_flux = cur_flux;
+	if (cur_flux == NULL)
+	  cur_flux = cur_connection->head;
+	else
+	  cur_flux = cur_flux->next;
       }
-      prev_flux = cur_flux;
-      if (cur_flux == NULL)
-	cur_flux = cur_connection->head;
-      else
-	cur_flux = cur_flux->next;
+      pthread_mutex_unlock(&cur_connection->lock);
     }
   }
 }
@@ -85,7 +90,7 @@ void			*flush_and_calc(void *ptr)
 
   (void) ptr;
   for (prev = time(NULL), cur = time(NULL);;cur = time(NULL)) {
-    if (cur - prev < 60) {
+    if (cur - prev > 60) {
       flush_closed_flux();
       prev = cur;
     } else {

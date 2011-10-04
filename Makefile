@@ -5,7 +5,7 @@
 ## Login   <jonathan.machado@epitech.net>
 ## 
 ## Started on  Fri Sep  2 11:36:43 2011 Jonathan Machado
-## Last update Mon Sep 26 12:07:41 2011 Jonathan Machado
+## Last update Tue Oct  4 13:52:06 2011 Jonathan Machado
 ##
 
 NAME=		flowstat
@@ -16,7 +16,7 @@ INCLUDES_DIR=	includes/
 INCLUDES=	$(INCLUDES_DIR)flowstat.h
 SRCS_DIR=	srcs/
 SRCS=		$(wildcard $(SRCS_DIR)*.c)
-CFLAGS=		-W -Wall -ansi -I$(INCLUDES_DIR) -pthread -O2 -Ilibipulog/include/ -D_BSD_SOURCE -D_XOPEN_SOURCE
+CFLAGS=		-W -Wall -ansi -I$(INCLUDES_DIR) -pthread -Ilibipulog/include/ -D_BSD_SOURCE -D_XOPEN_SOURCE -ggdb
 
 OBJS_DIR=       $(SRCS_DIR).objs/
 OBJS=		$(SRCS:%.c=%.o)

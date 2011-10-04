@@ -5,13 +5,14 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:24:24 2011 Jonathan Machado
-** Last update Thu Sep 29 11:34:00 2011 Jonathan Machado
+** Last update Mon Oct  3 17:22:28 2011 Jonathan Machado
 */
 
 #ifndef __FLOWSTAT_H__
 # define __FLOWSTAT_H__
 
 # include <unistd.h>
+# include <pthread.h>
 # include "libipulog/libipulog.h"
 /*
 **
@@ -107,6 +108,7 @@ typedef struct		connection
   struct flux		*head;
   struct flux		*tail;
   struct connection    	*next;
+  pthread_mutex_t	lock;
 }			connection;
 
 struct			global_info

@@ -5,12 +5,13 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:28:37 2011 Jonathan Machado
-** Last update Thu Sep 29 17:12:23 2011 Jonathan Machado
+** Last update Tue Oct  4 14:54:58 2011 Jonathan Machado
 */
 
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <pthread.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <arpa/inet.h>
@@ -23,7 +24,7 @@
 
 extern struct global_info	info;
 
-static void			update_flux(flux *current_flux, packet_info *pkt_info)
+static void    		update_flux(flux *current_flux, packet_info *pkt_info)
 {
   current_flux->last_packet = pkt_info->time;
   if (pkt_info->protocol == IPPROTO_TCP && pkt_info->fin)
@@ -42,9 +43,9 @@ static void			update_flux(flux *current_flux, packet_info *pkt_info)
     current_flux->output_packet++;
 }
 
-static int			is_the_same_flux(flux *current_flux, packet_info *pkt_info)
+static int	       	is_the_same_flux(flux *current_flux, packet_info *pkt_info)
 {
-  int				ret;
+  int	       		ret;
 
   ret = 1;
   if (pkt_info->protocol != current_flux->protocol)
@@ -71,17 +72,17 @@ static int			is_the_same_flux(flux *current_flux, packet_info *pkt_info)
   return (ret);
 }
 
-static void			icmpheader_handler(void *protocol_header, packet_info *pkt_info)
+static void    		icmpheader_handler(void *protocol_header, packet_info *pkt_info)
 {
-  struct icmphdr		*icmph = NULL;
+  struct icmphdr       	*icmph = NULL;
 
   icmph = protocol_header;
   pkt_info->type = icmph->type;
 }
 
-static void			tcpheader_handler(void *protocol_header, packet_info *pkt_info)
+static void    		tcpheader_handler(void *protocol_header, packet_info *pkt_info)
 {
-  struct tcphdr			*tcph = NULL;
+  struct tcphdr	       	*tcph = NULL;
 
   tcph = protocol_header;
   if (pkt_info->input)
@@ -94,9 +95,9 @@ static void			tcpheader_handler(void *protocol_header, packet_info *pkt_info)
     pkt_info->rst = 1;
 }
 
-static void			udpheader_handler(void *protocol_header, packet_info *pkt_info)
+static void    		udpheader_handler(void *protocol_header, packet_info *pkt_info)
 {
-  struct udphdr			*udph = NULL;
+  struct udphdr	       	*udph = NULL;
 
   udph = protocol_header;
   if (pkt_info->input)
@@ -105,10 +106,10 @@ static void			udpheader_handler(void *protocol_header, packet_info *pkt_info)
     pkt_info->port = ntohs(udph->dest);
 }
 
-static packet_info		*get_packet_information(ulog_packet_msg_t *pkt)
+static packet_info     	*get_packet_information(ulog_packet_msg_t *pkt)
 {
-  packet_info			*pkt_info = NULL;
-  struct iphdr			*iph = NULL;
+  packet_info	       	*pkt_info = NULL;
+  struct iphdr	       	*iph = NULL;
 
   pkt_info = xmalloc(sizeof(*pkt_info));
   memset(pkt_info, 0, sizeof(*pkt_info));
@@ -137,9 +138,9 @@ static packet_info		*get_packet_information(ulog_packet_msg_t *pkt)
   return (pkt_info);
 }
 
-static void			create_new_flux(connection *current_connection, packet_info *pkt_info)
+static void	       	create_new_flux(connection *current_connection, packet_info *pkt_info)
 {
-  flux				*new = NULL;
+  flux	       		*new = NULL;
 
   new = xmalloc(sizeof(*new));
   memset(new,0, sizeof(*new));
@@ -176,11 +177,11 @@ static void			create_new_flux(connection *current_connection, packet_info *pkt_i
   current_connection->number_flow++;
 }
 
-static void			create_new_connection(packet_info *pkt_info)
+static void	       	create_new_connection(packet_info *pkt_info)
 {
-  connection			*new = NULL;
-  struct sockaddr_in		socket;
-  char				dns[1024];
+  connection	       	*new = NULL;
+  struct sockaddr_in   	socket;
+  char		       	dns[1024];
 
   if (info.options.dns) {
     socket.sin_family = AF_INET;
@@ -197,6 +198,8 @@ static void			create_new_connection(packet_info *pkt_info)
   new->head = NULL;
   new->tail = NULL;
   new->next = NULL;
+  new->stat.last_ko = NULL;
+  pthread_mutex_init(&new->lock, NULL);
   if (info.head == NULL)
     info.head = new;
   else
@@ -206,9 +209,9 @@ static void			create_new_connection(packet_info *pkt_info)
   create_new_flux(new, pkt_info);
 }
 
-static connection		*ip_already_listed(packet_info *pkt_info)
+static connection	*ip_already_listed(packet_info *pkt_info)
 {
-  connection	       		*current = NULL;
+  connection           	*current = NULL;
 
   current = info.head;
   while (current != NULL) {
@@ -219,9 +222,10 @@ static connection		*ip_already_listed(packet_info *pkt_info)
   return (NULL);
 }
 
-static flux			*flux_already_listed(connection *current_connection, packet_info *pkt_info)
+static flux    		*flux_already_listed(connection *current_connection, packet_info *pkt_info)
 {
-  flux				*current = NULL;
+  flux		       	*current = NULL;
+
 
   current = current_connection->head;
   while (current) {
@@ -232,11 +236,11 @@ static flux			*flux_already_listed(connection *current_connection, packet_info *
   return (NULL);
 }
 
-static void			packet_handler(ulog_packet_msg_t *pkt)
+static void	       	packet_handler(ulog_packet_msg_t *pkt)
 {
-  packet_info			*pkt_info = NULL;
-  connection			*listed_connection = NULL;
-  flux				*listed_flux = NULL;
+  packet_info  		*pkt_info = NULL;
+  connection   		*listed_connection = NULL;
+  flux	       		*listed_flux = NULL;
 
   /*
   ** fill pkt_info from pkt
@@ -246,10 +250,12 @@ static void			packet_handler(ulog_packet_msg_t *pkt)
   */
   pkt_info = get_packet_information(pkt);
   if ((listed_connection = ip_already_listed(pkt_info)) != NULL) {
+    pthread_mutex_lock(&listed_connection->lock);
     if ((listed_flux = flux_already_listed(listed_connection, pkt_info)) != NULL)
       update_flux(listed_flux, pkt_info);
     else
       create_new_flux(listed_connection, pkt_info);
+    pthread_mutex_unlock(&listed_connection->lock);
   } else {
     create_new_connection(pkt_info);
   }
@@ -267,8 +273,8 @@ void			*read_and_analyze(void *ptr)
   while ((len = ipulog_read(h, info.buffer, BUFFER_SIZE, 1))) {
     while ((ulog_packet = ipulog_get_packet(h, info.buffer, len))) {
       packet_handler(ulog_packet);
-   	}
     }
+  }
   return (NULL);
 }
 

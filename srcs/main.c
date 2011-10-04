@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Fri Sep  2 12:00:57 2011 Jonathan Machado
-** Last update Thu Sep 29 11:06:31 2011 Jonathan Machado
+** Last update Mon Oct  3 13:21:14 2011 Jonathan Machado
 */
 
 #include <stdlib.h>
@@ -30,7 +30,6 @@ void			init(void)
   info.head = NULL;
   info.tail = NULL;
   signal(SIGINT, &free_at_interupt);
-  /* init mutex */
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
   if (pthread_create(&threads[0], &attr, &read_and_analyze, info.connection)) {
