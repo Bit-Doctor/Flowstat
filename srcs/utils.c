@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Tue Sep 20 11:22:53 2011 Jonathan Machado
-** Last update Thu Oct  6 17:33:32 2011 Jonathan Machado
+** Last update Fri Oct  7 15:38:43 2011 Jonathan Machado
 */
 
 #include <stdlib.h>
@@ -104,7 +104,7 @@ void			free_at_interupt(void)
   ipulog_destroy_handle(info.connection);
   free_connection_list(info.head);
   closelog();
-  exit(EXIT_SUCCESS);
+  pthread_exit((void*)EXIT_SUCCESS);
 }
 
 void			free_tab(char **tab)

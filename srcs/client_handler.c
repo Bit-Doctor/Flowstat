@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Thu Sep 29 11:53:30 2011 Jonathan Machado
-** Last update Fri Oct  7 11:05:15 2011 Jonathan Machado
+** Last update Fri Oct  7 15:31:50 2011 Jonathan Machado
 */
 
 #include <stdlib.h>
@@ -19,26 +19,27 @@
 
 int				serv_socket;
 int				clnt_socket;
-extern struct cmd_info         *list;
+extern struct cmd_info		list[];
 
 static void	       	handle_cmd(int nb, char **param)
 {
   int			i;
 
-  for (i = 0; list[i].cmd != NULL; i++) {
-    if (strcmp(param[0], list[i].cmd) == 0) {
-      if (nb == list[i].nb_param)
-	list[i].f(param);
-      else
-	send(clnt_socket, "Bad number of parameter\n",
-	     strlen("Bad number of parameter\n"), 0);
-      break;
+  if (param[0] != NULL) {
+    for (i = 0; list[i].cmd != NULL; i++) {
+      if (strcmp(param[0], list[i].cmd) == 0) {
+	if (nb == list[i].nb_param)
+	  list[i].f(param);
+	else
+	  send(clnt_socket, "Bad number of parameter\n",
+	       strlen("Bad number of parameter\n"), 0);
+	break;
+      }
     }
-    i++;
+    if (list[i].cmd == NULL)
+      send(clnt_socket, "Unknow command\n",
+	   strlen("Unknow command\n"), 0);
   }
-  if (list[i].cmd == NULL)
-    send(clnt_socket, "Unknow command\n",
-	 strlen("Unknow command\n"), 0);
 }
 
 static char		**get_next_cmd(int *nb)
@@ -49,18 +50,23 @@ static char		**get_next_cmd(int *nb)
   char			**param = NULL;
 
   i = 0;
+  send(clnt_socket, "flowstat>", strlen("flowstat>"), 0);
   param = xmalloc(3 * sizeof(*param));
   memset(param, 0, sizeof(*param));
+  memset(buff, 0, BUFFER_SIZE);
   /* read inf */
   len = recv(clnt_socket, buff, BUFFER_SIZE, 0);
   buff[len - 2] = 0;		/* to remove \n at the end */
-  param[i] = strtok(strdup(buff), " ");
+  param[i] = strtok(buff, " ");
+  if (param[i] != NULL)
+    param[i] = strdup(param[i]);
   i++;
-  while (i < 2 && (param[i] = strtok(NULL, " ")) != NULL)
+  while (i < 2 && (param[i] = strtok(NULL, " ")) != NULL) {
+    param[i] = strdup(param[i]);
     i++;
-  param[i] = NULL;
+  }
   *nb = i - 1;
- return (param);
+  return (param);
 }
 
 static void		recv_from_client(void)
@@ -70,8 +76,8 @@ static void		recv_from_client(void)
 
   while ((param = get_next_cmd(&nb)) != NULL) {
       handle_cmd(nb, param);
-      free(param); /* voir ici pour test */
-    }
+      free_tab(param);
+  }
   close(clnt_socket);
 }
 

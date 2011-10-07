@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:24:24 2011 Jonathan Machado
-** Last update Fri Oct  7 11:04:05 2011 Jonathan Machado
+** Last update Fri Oct  7 15:36:36 2011 Jonathan Machado
 */
 
 #ifndef __FLOWSTAT_H__
@@ -122,6 +122,7 @@ struct			global_info
   unsigned char	       	*buffer;
   struct ipulog_handle	*connection;
   u_int32_t    		number_connection;
+  pthread_t		threads[3];
   struct connection    	*head;
   struct connection    	*tail;
 };
