@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Fri Sep  2 12:00:57 2011 Jonathan Machado
-** Last update Mon Oct  3 13:21:14 2011 Jonathan Machado
+** Last update Thu Oct  6 17:40:55 2011 Jonathan Machado
 */
 
 #include <stdlib.h>
@@ -13,11 +13,10 @@
 #include <syslog.h>
 #include <pthread.h>
 #include <unistd.h>
-#include <signal.h>
 #include "flowstat.h"
 
 struct global_info	info;
-pthread_t		threads[2];
+pthread_t		threads[3];
 
 void			init(void)
 {
@@ -29,7 +28,6 @@ void			init(void)
   info.number_connection = 0;
   info.head = NULL;
   info.tail = NULL;
-  signal(SIGINT, &free_at_interupt);
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
   if (pthread_create(&threads[0], &attr, &read_and_analyze, info.connection)) {
@@ -37,6 +35,10 @@ void			init(void)
     exit(EXIT_FAILURE);
   }
   if (pthread_create(&threads[1], &attr, &flush_and_calc, info.connection)) {
+    flowstat_perror("pthread");
+    exit(EXIT_FAILURE);
+  }
+  if (pthread_create(&threads[2], &attr, &client_handler, info.connection)) {
     flowstat_perror("pthread");
     exit(EXIT_FAILURE);
   }
@@ -89,7 +91,7 @@ int			main(int ac, char **av)
   } else {
     printf("[ERROR] : an instance is already running\n");
   }
-  for(i = 0; i < 1; i++) {
+  for(i = 0; i < 3; i++) {
     if (pthread_join(threads[i], &status)) {
       flowstat_perror("pthread_join");
       exit(EXIT_FAILURE);

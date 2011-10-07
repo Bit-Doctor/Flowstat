@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:24:24 2011 Jonathan Machado
-** Last update Mon Oct  3 17:22:28 2011 Jonathan Machado
+** Last update Fri Oct  7 11:04:05 2011 Jonathan Machado
 */
 
 #ifndef __FLOWSTAT_H__
@@ -126,6 +126,12 @@ struct			global_info
   struct connection    	*tail;
 };
 
+struct			cmd_info
+{
+  char			*cmd;
+  int			nb_param;
+  void			(*f)(char **);
+};
 
 /*
 **
@@ -134,7 +140,9 @@ struct			global_info
 */
 
 void			*xmalloc(int);
-void			free_at_interupt(int signum);
+void			free_tab(char **tab);
+void			free_at_interupt(void);
+void		 	*client_handler(void *ptr);
 void			delete_flux(connection *current_connection, flux *prev, flux *delete);
 void			free_connection_list(connection *head);
 void			*read_and_analyze(void *ptr);
@@ -145,5 +153,7 @@ int			get_local_ip(void);			/* return local ip of INTERFACE */
 int			demonize(void);				/* return -1 if another instance is running and 0 if not */
 struct ipulog_handle    *verified_ipulog_create_handle(u_int32_t, u_int32_t);
 flux			*extract_flux(connection *current_connection, flux *prev, flux *delete);
+flux    		*flux_already_listed(connection *current_connection, packet_info *pkt_info);
+connection		*ip_already_listed(u_int32_t ip);
 
 #endif	/* __FLOWSTAT_H__*/

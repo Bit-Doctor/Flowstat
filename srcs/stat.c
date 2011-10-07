@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep 21 17:45:46 2011 Jonathan Machado
-** Last update Tue Oct  4 15:00:34 2011 Jonathan Machado
+** Last update Tue Oct  4 16:19:51 2011 Jonathan Machado
 */
 
 #include <stdlib.h>
@@ -35,7 +35,6 @@ static void	       	update_stat(connection *cnt, flux *flx)
 	stat->ok++;
       } else {
 	++stat->ko;
-	printf("%i %p\n", stat->ko, stat->last_ko);
 	free(stat->last_ko);
 	stat->last_ko = xmalloc(sizeof(flux));
 	stat->last_ko = memcpy(stat->last_ko, flx, sizeof(flux));
@@ -100,3 +99,4 @@ void			*flush_and_calc(void *ptr)
   /* calc stat */
   return (NULL);
 }
+

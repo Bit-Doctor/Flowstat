@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Tue Sep 20 11:22:53 2011 Jonathan Machado
-** Last update Thu Sep 29 11:36:38 2011 Jonathan Machado
+** Last update Thu Oct  6 17:33:32 2011 Jonathan Machado
 */
 
 #include <stdlib.h>
@@ -97,13 +97,24 @@ int			demonize()
   return (1);
 }
 
-void			free_at_interupt(int signum)
+void			free_at_interupt(void)
 {
-  (void)signum;
   free(info.buffer);
   info.buffer = NULL;
   ipulog_destroy_handle(info.connection);
   free_connection_list(info.head);
   closelog();
   exit(EXIT_SUCCESS);
+}
+
+void			free_tab(char **tab)
+{
+  int			i;
+
+  for (i = 0; tab[i] != NULL; i++) {
+    free(tab[i]);
+    tab[i] = NULL;
+  }
+  free(tab);
+  tab = NULL;
 }

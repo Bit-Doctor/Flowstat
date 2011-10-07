@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:28:37 2011 Jonathan Machado
-** Last update Tue Oct  4 14:54:58 2011 Jonathan Machado
+** Last update Fri Oct  7 11:03:05 2011 Jonathan Machado
 */
 
 #include <string.h>
@@ -41,35 +41,6 @@ static void    		update_flux(flux *current_flux, packet_info *pkt_info)
     current_flux->input_packet++;
   else
     current_flux->output_packet++;
-}
-
-static int	       	is_the_same_flux(flux *current_flux, packet_info *pkt_info)
-{
-  int	       		ret;
-
-  ret = 1;
-  if (pkt_info->protocol != current_flux->protocol)
-    ret = 0;
-  switch (pkt_info->protocol) {
-  case IPPROTO_ICMP:
-    if (pkt_info->type != current_flux->protocol_data.icmp.type)
-      ret = 0;
-    break;
-  case IPPROTO_TCP:
-    if (current_flux->protocol_data.tcp.stts == closed || current_flux->protocol_data.tcp.stts == reseted)
-      ret = 0;
-    if (pkt_info->input && pkt_info->port != current_flux->protocol_data.tcp.port)
-      ret = 0;
-    else if (!pkt_info->input && pkt_info->port != current_flux->protocol_data.tcp.port)
-      ret = 0;
-    break;
-  case IPPROTO_UDP:
-    if (pkt_info->input && pkt_info->port !=  current_flux->protocol_data.udp.port)
-      ret = 0;
-    else if (!pkt_info->input && pkt_info->port != current_flux->protocol_data.udp.port)
-      ret = 0;
-  }
-  return (ret);
 }
 
 static void    		icmpheader_handler(void *protocol_header, packet_info *pkt_info)
@@ -111,12 +82,16 @@ static packet_info     	*get_packet_information(ulog_packet_msg_t *pkt)
   packet_info	       	*pkt_info = NULL;
   struct iphdr	       	*iph = NULL;
 
+  /*
+  ** fill packet_info strcut with raw data from ulog_packet_msg_t
+  **
+  */
   pkt_info = xmalloc(sizeof(*pkt_info));
   memset(pkt_info, 0, sizeof(*pkt_info));
   iph = (struct iphdr *)pkt->payload;
   pkt_info->ip = ntohl(iph->daddr);
   pkt_info->data = ntohs(iph->tot_len);
-  if (ntohl(iph->daddr) == info.local_ip && ntohl(iph->daddr) == LOCALIP) {
+  if (ntohl(iph->daddr) == info.local_ip || ntohl(iph->daddr) == LOCALIP) {
     pkt_info->ip = ntohl(iph->saddr);
     pkt_info->input = 1;
   }
@@ -209,33 +184,6 @@ static void	       	create_new_connection(packet_info *pkt_info)
   create_new_flux(new, pkt_info);
 }
 
-static connection	*ip_already_listed(packet_info *pkt_info)
-{
-  connection           	*current = NULL;
-
-  current = info.head;
-  while (current != NULL) {
-    if (pkt_info->ip == current->ip)
-      return (current);
-    current = current->next;
-  }
-  return (NULL);
-}
-
-static flux    		*flux_already_listed(connection *current_connection, packet_info *pkt_info)
-{
-  flux		       	*current = NULL;
-
-
-  current = current_connection->head;
-  while (current) {
-    if (is_the_same_flux(current, pkt_info))
-      return (current);
-    current = current->next;
-  }
-  return (NULL);
-}
-
 static void	       	packet_handler(ulog_packet_msg_t *pkt)
 {
   packet_info  		*pkt_info = NULL;
@@ -249,7 +197,7 @@ static void	       	packet_handler(ulog_packet_msg_t *pkt)
   ** else add them in the linked list
   */
   pkt_info = get_packet_information(pkt);
-  if ((listed_connection = ip_already_listed(pkt_info)) != NULL) {
+  if ((listed_connection = ip_already_listed(pkt_info->ip)) != NULL) {
     pthread_mutex_lock(&listed_connection->lock);
     if ((listed_flux = flux_already_listed(listed_connection, pkt_info)) != NULL)
       update_flux(listed_flux, pkt_info);
