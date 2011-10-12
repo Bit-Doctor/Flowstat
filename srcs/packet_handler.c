@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:28:37 2011 Jonathan Machado
-** Last update Fri Oct  7 11:03:05 2011 Jonathan Machado
+** Last update Mon Oct 10 10:50:08 2011 Jonathan Machado
 */
 
 #include <string.h>

@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Thu Sep 29 11:53:30 2011 Jonathan Machado
-** Last update Fri Oct  7 15:31:50 2011 Jonathan Machado
+** Last update Wed Oct 12 17:14:37 2011 Jonathan Machado
 */
 
 #include <stdlib.h>
@@ -45,18 +45,21 @@ static void	       	handle_cmd(int nb, char **param)
 static char		**get_next_cmd(int *nb)
 {
   int			i;
-  int			len;
+  int			ret;
   char			buff[BUFFER_SIZE];
   char			**param = NULL;
 
   i = 0;
   send(clnt_socket, "flowstat>", strlen("flowstat>"), 0);
   param = xmalloc(3 * sizeof(*param));
-  memset(param, 0, sizeof(*param));
+  memset(param, 0, 3 * sizeof(*param));
   memset(buff, 0, BUFFER_SIZE);
   /* read inf */
-  len = recv(clnt_socket, buff, BUFFER_SIZE, 0);
-  buff[len - 2] = 0;		/* to remove \n at the end */
+  /* epur str */
+  ret = recv(clnt_socket, buff, BUFFER_SIZE, 0);
+  if (ret < 0)
+    return (NULL);
+  buff[ret - 2] = 0;		/* to remove \n at the end */
   param[i] = strtok(buff, " ");
   if (param[i] != NULL)
     param[i] = strdup(param[i]);
@@ -112,5 +115,5 @@ void		 	*client_handler(void *ptr)
     }
     recv_from_client();
   }
-  return (NULL);
+  /* never reached */
 }
