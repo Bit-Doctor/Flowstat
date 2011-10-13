@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:28:37 2011 Jonathan Machado
-** Last update Mon Oct 10 10:50:08 2011 Jonathan Machado
+** Last update Thu Oct 13 09:52:12 2011 Jonathan Machado
 */
 
 #include <string.h>
@@ -218,7 +218,12 @@ void			*read_and_analyze(void *ptr)
   struct ipulog_handle	*h = NULL;
 
   h = ptr;
-  while ((len = ipulog_read(h, info.buffer, BUFFER_SIZE, 1))) {
+  if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL))
+    {
+      flowstat_perror("pthread_setcanceltype");
+      exit(EXIT_FAILURE);
+    }
+  while (info.connection && (len = ipulog_read(h, info.buffer, BUFFER_SIZE, 1))) {
     while ((ulog_packet = ipulog_get_packet(h, info.buffer, len))) {
       packet_handler(ulog_packet);
     }

@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Fri Oct  7 10:56:22 2011 Jonathan Machado
-** Last update Wed Oct 12 16:48:28 2011 Jonathan Machado
+** Last update Wed Oct 12 17:38:40 2011 Jonathan Machado
 */
 
 #include <stdio.h>
@@ -119,10 +119,10 @@ static void	       	kill_cmd(char **param)
   free_tab(param);
   send(clnt_socket, "Deamon is shuting Down ...\n",
        strlen("Deamon is shuting Down ...\n"), 0);
-  close(clnt_socket);
-  close(serv_socket);
   pthread_cancel(info.threads[0]);
   pthread_cancel(info.threads[1]);
+  close(clnt_socket);
+  close(serv_socket);
   free_at_interupt();
 }
 

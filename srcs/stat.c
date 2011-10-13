@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep 21 17:45:46 2011 Jonathan Machado
-** Last update Tue Oct  4 16:19:51 2011 Jonathan Machado
+** Last update Thu Oct 13 09:53:33 2011 Jonathan Machado
 */
 
 #include <stdlib.h>
@@ -88,6 +88,11 @@ void			*flush_and_calc(void *ptr)
   time_t	       	prev;
 
   (void) ptr;
+  if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL))
+    {
+      flowstat_perror("pthread_setcanceltype");
+      exit(EXIT_FAILURE);
+    }
   for (prev = time(NULL), cur = time(NULL);;cur = time(NULL)) {
     if (cur - prev > 60) {
       flush_closed_flux();

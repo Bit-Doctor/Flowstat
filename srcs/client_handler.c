@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Thu Sep 29 11:53:30 2011 Jonathan Machado
-** Last update Wed Oct 12 17:14:37 2011 Jonathan Machado
+** Last update Thu Oct 13 09:52:26 2011 Jonathan Machado
 */
 
 #include <stdlib.h>
@@ -91,6 +91,11 @@ void		 	*client_handler(void *ptr)
   struct sockaddr_in	clnt_addr;
   (void)ptr;
 
+  if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL))
+    {
+      flowstat_perror("pthread_setcanceltype");
+      exit(EXIT_FAILURE);
+    }
   memset(&serv_addr, 0, sizeof(serv_addr));
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
