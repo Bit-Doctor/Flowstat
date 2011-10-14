@@ -1,10 +1,8 @@
-Flowstat
-========
+##Flowstat
 
 This deamon will log all packet redirected to ULOG rule in iptables
 
-Usage
------
+#Usage
 
 You need to be root to lunch flowstat :
 
@@ -14,12 +12,11 @@ or
 
     sudo ./flowstat
 
-Connection telenet
-------------------
+#Connection telenet
 
 telenet localhost 5454
 
-Comande:
+#Comande
 * **kill** - kill the deamon
 * **ip** - show ip connected 
 * **flux param** - where param is an ip, show all active/non flushed connection from/to param
