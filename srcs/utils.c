@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Tue Sep 20 11:22:53 2011 Jonathan Machado
-** Last update Wed Oct 12 17:40:39 2011 Jonathan Machado
+** Last update Fri Oct 14 16:57:14 2011 Jonathan Machado
 */
 
 #include <stdlib.h>
@@ -50,7 +50,7 @@ int			get_local_ip(void)
   return (ntohl(ret));
 }
 
-int			demonize()
+int			demonize(void)
 {
   int			pid;
   int			fd;

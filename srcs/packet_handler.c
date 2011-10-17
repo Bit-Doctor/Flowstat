@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:28:37 2011 Jonathan Machado
-** Last update Thu Oct 13 09:52:12 2011 Jonathan Machado
+** Last update Fri Oct 14 17:19:52 2011 Jonathan Machado
 */
 
 #include <string.h>
@@ -77,15 +77,15 @@ static void    		udpheader_handler(void *protocol_header, packet_info *pkt_info)
     pkt_info->port = ntohs(udph->dest);
 }
 
+
+/*
+** fill packet_info struct with raw data from ulog_packet_msg_t
+*/
 static packet_info     	*get_packet_information(ulog_packet_msg_t *pkt)
 {
   packet_info	       	*pkt_info = NULL;
   struct iphdr	       	*iph = NULL;
 
-  /*
-  ** fill packet_info strcut with raw data from ulog_packet_msg_t
-  **
-  */
   pkt_info = xmalloc(sizeof(*pkt_info));
   memset(pkt_info, 0, sizeof(*pkt_info));
   iph = (struct iphdr *)pkt->payload;
@@ -184,18 +184,19 @@ static void	       	create_new_connection(packet_info *pkt_info)
   create_new_flux(new, pkt_info);
 }
 
+
+/*
+** fill pkt_info from pkt
+** then compare the info with the connections if already listed
+** if the connection is listed search if the flux exist
+** else add them in the linked list
+*/
 static void	       	packet_handler(ulog_packet_msg_t *pkt)
 {
   packet_info  		*pkt_info = NULL;
   connection   		*listed_connection = NULL;
   flux	       		*listed_flux = NULL;
 
-  /*
-  ** fill pkt_info from pkt
-  ** then compare the info with the connections if already listed
-  ** if the connection is listed search if the flux exist
-  ** else add them in the linked list
-  */
   pkt_info = get_packet_information(pkt);
   if ((listed_connection = ip_already_listed(pkt_info->ip)) != NULL) {
     pthread_mutex_lock(&listed_connection->lock);
@@ -211,6 +212,12 @@ static void	       	packet_handler(ulog_packet_msg_t *pkt)
   pkt_info = NULL;
 }
 
+/*
+**	main fonction of the packet handler thread
+**	read and fill packet sent by the kernel in the
+**	libipulog fonctions ipulog_read() and ipulog_get_packet()
+**	and call packet handler for the logging
+*/
 void			*read_and_analyze(void *ptr)
 {
   int			len;
