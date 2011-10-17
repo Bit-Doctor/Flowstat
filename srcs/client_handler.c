@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Thu Sep 29 11:53:30 2011 Jonathan Machado
-** Last update Thu Oct 13 09:52:26 2011 Jonathan Machado
+** Last update Fri Oct 14 17:14:05 2011 Jonathan Machado
 */
 
 #include <stdlib.h>
@@ -21,6 +21,11 @@ int				serv_socket;
 int				clnt_socket;
 extern struct cmd_info		list[];
 
+/*
+**	compare the first word of the array with the knowed cmd in list[]
+**	and check if the required number of parameter match else send
+**	an error to the client, if the cmd is correct then call f()
+*/
 static void	       	handle_cmd(int nb, char **param)
 {
   int			i;
@@ -42,6 +47,10 @@ static void	       	handle_cmd(int nb, char **param)
   }
 }
 
+/*
+**	get the next command and separe each word in a aray
+**	return that aray and fill nb with the number of word
+*/
 static char		**get_next_cmd(int *nb)
 {
   int			i;
@@ -72,6 +81,10 @@ static char		**get_next_cmd(int *nb)
   return (param);
 }
 
+/*
+**	as long as the client is connected get the next commmand
+**	and treat it in handle_cmd()
+*/
 static void		recv_from_client(void)
 {
   int			nb;
@@ -84,6 +97,12 @@ static void		recv_from_client(void)
   close(clnt_socket);
 }
 
+/*
+**	main fonction of client_handler thread
+**	create a server socket and then bind it
+**	listen accept only one pending client at once
+**	after accepting the client revc_from_client take the hand
+*/
 void		 	*client_handler(void *ptr)
 {
   socklen_t		clnt_addr_len;

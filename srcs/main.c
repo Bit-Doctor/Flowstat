@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Fri Sep  2 12:00:57 2011 Jonathan Machado
-** Last update Fri Oct  7 15:36:57 2011 Jonathan Machado
+** Last update Mon Oct 17 12:34:13 2011 Jonathan Machado
 */
 
 #include <stdlib.h>
@@ -33,11 +33,11 @@ void			init(void)
     flowstat_perror("pthread");
     exit(EXIT_FAILURE);
   }
-  if (pthread_create(&info.threads[1], &attr, &flush_and_calc, info.connection)) {
+  if (pthread_create(&info.threads[1], &attr, &flush_and_calc, NULL)) {
     flowstat_perror("pthread");
     exit(EXIT_FAILURE);
   }
-  if (pthread_create(&info.threads[2], &attr, &client_handler, info.connection)) {
+  if (pthread_create(&info.threads[2], &attr, &client_handler, NULL)) {
     flowstat_perror("pthread");
     exit(EXIT_FAILURE);
   }
@@ -48,7 +48,6 @@ void			usage(char *str)
 {
   printf("usage %s [options]\n"
 	 "-h\t\tthis text you see right here\n"
-	 "-D\t\tdemonize\n"
 	 "-d\t\tactivate DNS resolution\n"
 	 "-l\t\tactivate detailed output\n"
 	 ,str);
