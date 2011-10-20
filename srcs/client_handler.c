@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Thu Sep 29 11:53:30 2011 Jonathan Machado
-** Last update Fri Oct 14 17:14:05 2011 Jonathan Machado
+** Last update Tue Oct 18 19:08:52 2011 Jonathan Machado
 */
 
 #include <stdlib.h>
@@ -140,4 +140,5 @@ void		 	*client_handler(void *ptr)
     recv_from_client();
   }
   /* never reached */
+  pthread_exit(NULL);
 }

@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep 21 09:41:42 2011 Jonathan Machado
-** Last update Mon Oct 17 12:04:58 2011 Jonathan Machado
+** Last update Thu Oct 20 11:13:46 2011 Jonathan Machado
 */
 
 #include <stdlib.h>
@@ -99,16 +99,13 @@ static int	       	is_the_same_flux(flux *current_flux, packet_info *pkt_info)
   case IPPROTO_TCP:
     if (current_flux->protocol_data.tcp.stts == closed || current_flux->protocol_data.tcp.stts == reseted)
       ret = 0;
-    if (pkt_info->input && pkt_info->port != current_flux->protocol_data.tcp.port)
-      ret = 0;
-    else if (!pkt_info->input && pkt_info->port != current_flux->protocol_data.tcp.port)
+    else if (pkt_info->port != current_flux->protocol_data.tcp.port)
       ret = 0;
     break;
   case IPPROTO_UDP:
-    if (pkt_info->input && pkt_info->port !=  current_flux->protocol_data.udp.port)
+    if (pkt_info->port !=  current_flux->protocol_data.udp.port)
       ret = 0;
-    else if (!pkt_info->input && pkt_info->port != current_flux->protocol_data.udp.port)
-      ret = 0;
+    break;
   }
   return (ret);
 }

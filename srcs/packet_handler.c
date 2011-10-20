@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:28:37 2011 Jonathan Machado
-** Last update Fri Oct 14 17:19:52 2011 Jonathan Machado
+** Last update Thu Oct 20 11:46:52 2011 Jonathan Machado
 */
 
 #include <string.h>
@@ -27,10 +27,16 @@ extern struct global_info	info;
 static void    		update_flux(flux *current_flux, packet_info *pkt_info)
 {
   current_flux->last_packet = pkt_info->time;
-  if (pkt_info->protocol == IPPROTO_TCP && pkt_info->fin)
-    current_flux->protocol_data.tcp.stts++;
-  if (pkt_info->protocol == IPPROTO_TCP && pkt_info->rst)
-    current_flux->protocol_data.tcp.stts = reseted;
+  if (pkt_info->protocol == IPPROTO_TCP) {
+    if (pkt_info->fin)
+      current_flux->protocol_data.tcp.stts++;
+    else if (current_flux->protocol_data.tcp.stts == wait_last_ack && pkt_info->ack)
+      current_flux->protocol_data.tcp.stts = closed;
+    else if (current_flux->protocol_data.tcp.stts == one_peer_closed && pkt_info->rst)
+      current_flux->protocol_data.tcp.stts = closed;
+    else if (pkt_info->rst)
+      current_flux->protocol_data.tcp.stts = reseted;
+  }
   if (pkt_info->protocol == IPPROTO_TCP || pkt_info->protocol == IPPROTO_UDP) {
     if (pkt_info->input)
       current_flux->input_data += pkt_info->data;
@@ -64,6 +70,8 @@ static void    		tcpheader_handler(void *protocol_header, packet_info *pkt_info)
     pkt_info->fin = 1;
   if (tcph->rst)
     pkt_info->rst = 1;
+  if (tcph->ack)
+    pkt_info->ack = 1;
 }
 
 static void    		udpheader_handler(void *protocol_header, packet_info *pkt_info)
@@ -76,7 +84,6 @@ static void    		udpheader_handler(void *protocol_header, packet_info *pkt_info)
   else
     pkt_info->port = ntohs(udph->dest);
 }
-
 
 /*
 ** fill packet_info struct with raw data from ulog_packet_msg_t
@@ -184,11 +191,10 @@ static void	       	create_new_connection(packet_info *pkt_info)
   create_new_flux(new, pkt_info);
 }
 
-
 /*
 ** fill pkt_info from pkt
 ** then compare the info with the connections if already listed
-** if the connection is listed search if the flux exist
+** if the connection is listed search if the flux is in the list
 ** else add them in the linked list
 */
 static void	       	packet_handler(ulog_packet_msg_t *pkt)
@@ -230,11 +236,17 @@ void			*read_and_analyze(void *ptr)
       flowstat_perror("pthread_setcanceltype");
       exit(EXIT_FAILURE);
     }
-  while (info.connection && (len = ipulog_read(h, info.buffer, BUFFER_SIZE, 1))) {
-    while ((ulog_packet = ipulog_get_packet(h, info.buffer, len))) {
-      packet_handler(ulog_packet);
+  while (1) {
+    while (info.connection && (len = ipulog_read(h, info.buffer, BUFFER_SIZE, 1))) {
+      if (len <= 0) {
+	break;
+      }
+      while ((ulog_packet = ipulog_get_packet(h, info.buffer, len))) {
+	packet_handler(ulog_packet);
+      }
     }
   }
-  return (NULL);
+  /* never reached */
+  pthread_exit(NULL);
 }
 

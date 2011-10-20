@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep 21 17:45:46 2011 Jonathan Machado
-** Last update Thu Oct 13 09:53:33 2011 Jonathan Machado
+** Last update Fri Oct 14 16:03:34 2011 Jonathan Machado
 */
 
 #include <stdlib.h>
@@ -101,7 +101,6 @@ void			*flush_and_calc(void *ptr)
       sleep(60 - (cur - prev));
     }
   }
-  /* calc stat */
   return (NULL);
 }
 

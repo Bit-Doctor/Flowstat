@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:24:24 2011 Jonathan Machado
-** Last update Fri Oct  7 15:36:36 2011 Jonathan Machado
+** Last update Wed Oct 19 12:28:48 2011 Jonathan Machado
 */
 
 #ifndef __FLOWSTAT_H__
@@ -39,6 +39,7 @@ typedef enum	status
     reseted = -1,
     connected,
     one_peer_closed,
+    wait_last_ack,
     closed
   }		status;
 
@@ -59,6 +60,7 @@ typedef struct	packet_info
   u_int8_t		type;
   u_int8_t		fin;
   u_int8_t		rst;
+  u_int8_t		ack;
 }		packet_info;
 
 struct			flux_stat
