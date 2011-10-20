@@ -11,9 +11,9 @@ or
 
     sudo ./flowstat
 
-Connection telenet
+Connection telnet
 
-    telenet localhost 5454
+    telnet localhost 5454
 
 #option
 
