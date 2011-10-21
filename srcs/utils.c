@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Tue Sep 20 11:22:53 2011 Jonathan Machado
-** Last update Fri Oct 14 16:57:14 2011 Jonathan Machado
+** Last update Fri Oct 21 12:14:56 2011 Jonathan Machado
 */
 
 #include <stdlib.h>
@@ -25,7 +25,7 @@
 
 extern struct global_info	info;
 
-int			get_local_ip(void)
+u_int32_t      		get_local_ip(void)
 {
   int			ret;
   struct ifaddrs	*myaddrs, *ifa;
