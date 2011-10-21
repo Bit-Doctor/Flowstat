@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:28:37 2011 Jonathan Machado
-** Last update Thu Oct 20 11:46:52 2011 Jonathan Machado
+** Last update Fri Oct 21 12:09:41 2011 Jonathan Machado
 */
 
 #include <string.h>
@@ -24,29 +24,29 @@
 
 extern struct global_info	info;
 
-static void    		update_flux(flux *current_flux, packet_info *pkt_info)
+static void    		update_flux(flux *cur_flux, packet_info *pkt_info)
 {
-  current_flux->last_packet = pkt_info->time;
+  cur_flux->last_packet = pkt_info->time;
   if (pkt_info->protocol == IPPROTO_TCP) {
     if (pkt_info->fin)
-      current_flux->protocol_data.tcp.stts++;
-    else if (current_flux->protocol_data.tcp.stts == wait_last_ack && pkt_info->ack)
-      current_flux->protocol_data.tcp.stts = closed;
-    else if (current_flux->protocol_data.tcp.stts == one_peer_closed && pkt_info->rst)
-      current_flux->protocol_data.tcp.stts = closed;
+      cur_flux->protocol_data.tcp.stts++;
+    else if (cur_flux->protocol_data.tcp.stts == wait_last_ack && pkt_info->ack)
+      cur_flux->protocol_data.tcp.stts = closed;
+    else if (cur_flux->protocol_data.tcp.stts == one_peer_closed && pkt_info->rst)
+      cur_flux->protocol_data.tcp.stts = closed;
     else if (pkt_info->rst)
-      current_flux->protocol_data.tcp.stts = reseted;
+      cur_flux->protocol_data.tcp.stts = reseted;
   }
   if (pkt_info->protocol == IPPROTO_TCP || pkt_info->protocol == IPPROTO_UDP) {
     if (pkt_info->input)
-      current_flux->input_data += pkt_info->data;
+      cur_flux->input_data += pkt_info->data;
     else
-      current_flux->output_data += pkt_info->data;
+      cur_flux->output_data += pkt_info->data;
   }
   if (pkt_info->input)
-    current_flux->input_packet++;
+    cur_flux->input_packet++;
   else
-    current_flux->output_packet++;
+    cur_flux->output_packet++;
 }
 
 static void    		icmpheader_handler(void *protocol_header, packet_info *pkt_info)
@@ -120,7 +120,7 @@ static packet_info     	*get_packet_information(ulog_packet_msg_t *pkt)
   return (pkt_info);
 }
 
-static void	       	create_new_flux(connection *current_connection, packet_info *pkt_info)
+static void	       	create_new_flux(connection *cur_cnt, packet_info *pkt_info)
 {
   flux	       		*new = NULL;
 
@@ -151,12 +151,8 @@ static void	       	create_new_flux(connection *current_connection, packet_info 
   new->first_packet = pkt_info->time;
   new->last_packet = pkt_info->time;
   new->next = NULL;
-  if (current_connection->head == NULL)
-    current_connection->head = new;
-  else
-    current_connection->tail->next = new;
-  current_connection->tail = new;
-  current_connection->number_flow++;
+  add_flux_to_end_list(&cur_cnt->head,&cur_cnt->tail, new);
+  cur_cnt->number_flow++;
 }
 
 static void	       	create_new_connection(packet_info *pkt_info)
@@ -165,30 +161,34 @@ static void	       	create_new_connection(packet_info *pkt_info)
   struct sockaddr_in   	socket;
   char		       	dns[1024];
 
-  if (info.options.dns) {
-    socket.sin_family = AF_INET;
-    socket.sin_addr.s_addr = htonl(pkt_info->ip);
-    socket.sin_port = htons(80);
-    getnameinfo((const struct sockaddr *)&socket, sizeof(socket), dns, sizeof(dns), NULL, 0, 0);
+  if (info.number_connection < info.options.ip_limit) {
+    if (info.options.dns) {
+      socket.sin_family = AF_INET;
+      socket.sin_addr.s_addr = htonl(pkt_info->ip);
+      socket.sin_port = htons(80);
+      getnameinfo((const struct sockaddr *)&socket, sizeof(socket), dns, sizeof(dns), NULL, 0, 0);
+    }
+    new = xmalloc(sizeof(*new));
+    memset(new,0, sizeof(*new));
+    new->ip = pkt_info->ip;
+    if (info.options.dns)
+      new->hostname = strdup(dns);
+    new->number_flow = 0;
+    new->head = NULL;
+    new->tail = NULL;
+    new->next = NULL;
+    new->stat.last_ko = NULL;
+    pthread_mutex_init(&new->lock, NULL);
+    if (info.head == NULL)
+      info.head = new;
+    else
+      info.tail->next = new;
+    info.tail = new;
+    info.number_connection++;
+    create_new_flux(new, pkt_info);
+  } else {
+    /* flush and syslog */
   }
-  new = xmalloc(sizeof(*new));
-  memset(new,0, sizeof(*new));
-  new->ip = pkt_info->ip;
-  if (info.options.dns)
-    new->hostname = strdup(dns);
-  new->number_flow = 0;
-  new->head = NULL;
-  new->tail = NULL;
-  new->next = NULL;
-  new->stat.last_ko = NULL;
-  pthread_mutex_init(&new->lock, NULL);
-  if (info.head == NULL)
-    info.head = new;
-  else
-    info.tail->next = new;
-  info.tail = new;
-  info.number_connection++;
-  create_new_flux(new, pkt_info);
 }
 
 /*
@@ -200,17 +200,17 @@ static void	       	create_new_connection(packet_info *pkt_info)
 static void	       	packet_handler(ulog_packet_msg_t *pkt)
 {
   packet_info  		*pkt_info = NULL;
-  connection   		*listed_connection = NULL;
+  connection   		*listed_cnt = NULL;
   flux	       		*listed_flux = NULL;
 
   pkt_info = get_packet_information(pkt);
-  if ((listed_connection = ip_already_listed(pkt_info->ip)) != NULL) {
-    pthread_mutex_lock(&listed_connection->lock);
-    if ((listed_flux = flux_already_listed(listed_connection, pkt_info)) != NULL)
+  if ((listed_cnt = ip_already_listed(pkt_info->ip)) != NULL) {
+    pthread_mutex_lock(&listed_cnt->lock);
+    if ((listed_flux = flux_already_listed(listed_cnt, pkt_info)) != NULL)
       update_flux(listed_flux, pkt_info);
     else
-      create_new_flux(listed_connection, pkt_info);
-    pthread_mutex_unlock(&listed_connection->lock);
+      create_new_flux(listed_cnt, pkt_info);
+    pthread_mutex_unlock(&listed_cnt->lock);
   } else {
     create_new_connection(pkt_info);
   }

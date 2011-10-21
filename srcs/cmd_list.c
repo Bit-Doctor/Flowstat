@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Fri Oct  7 10:56:22 2011 Jonathan Machado
-** Last update Wed Oct 12 17:38:40 2011 Jonathan Machado
+** Last update Thu Oct 20 15:15:42 2011 Jonathan Machado
 */
 
 #include <stdio.h>
@@ -28,18 +28,30 @@ extern struct global_info	info;
 static void		exit_cmd(char **param);
 static void	       	kill_cmd(char **param);
 static void		stat_cmd(char **param);
-static void		flux_cmd(char **param);
+static void		connection_cmd(char **param);
 static void		ip_cmd(char **param);
+static void		flush_cmd(char **param);
 
 struct cmd_info		list[] =
   {
     {"exit", 0, &exit_cmd},
     {"kill", 0, &kill_cmd},
-    {"flux", 1, &flux_cmd},
+    {"connection", 1, &connection_cmd},
     {"ip", 0, &ip_cmd},
     {"stat", 1, &stat_cmd},
+    {"flush",0, &flush_cmd},
     {NULL,0,NULL}
   };
+
+static void		flush_cmd(char **param)
+{
+  connection		*prev;
+  (void)param;
+
+  prev = info.head;
+  info.head = NULL;
+  info.tail = NULL;
+}
 
 static void		exit_cmd(char **param)
 {
@@ -135,8 +147,8 @@ static void		stat_cmd(char **param)
   inet_pton(AF_INET, param[1], &ip);
   cnt = ip_already_listed(ntohl(ip));
   if (cnt == NULL) {
-    send(clnt_socket, "No connection listed for this ip\n",
-	 strlen("No connection listed for this ip\n"), 0);
+    send(clnt_socket, "This ip is not listed\n",
+	 strlen("This ip is not listed\n"), 0);
   }
   else {
     if (info.options.dns)
@@ -157,7 +169,7 @@ static void		stat_cmd(char **param)
   }
 }
 
-static void		flux_cmd(char **param)
+static void		connection_cmd(char **param)
 {
   int			ip = 0;
   char			*buff = NULL;

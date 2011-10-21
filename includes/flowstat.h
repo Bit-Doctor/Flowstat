@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:24:24 2011 Jonathan Machado
-** Last update Wed Oct 19 12:28:48 2011 Jonathan Machado
+** Last update Fri Oct 21 12:13:44 2011 Jonathan Machado
 */
 
 #ifndef __FLOWSTAT_H__
@@ -71,6 +71,8 @@ struct			flux_stat
   u_int32_t		icmp;
   u_int32_t		other;
   struct flux		*last_ko;
+  struct flux		*history_head;
+  struct flux		*history_tail;
 };
 
 typedef struct        	flux
@@ -119,6 +121,8 @@ struct			global_info
   {
     char		advanced;
     char		dns;
+    u_int32_t  		ip_limit;
+    u_int32_t		history_size;
   }			options;
   u_int32_t	       	local_ip;
   unsigned char	       	*buffer;
@@ -152,11 +156,15 @@ void			*read_and_analyze(void *ptr);
 void			*flush_and_calc(void *ptr);
 void			flush_closed_connection(void);		/* flush closed connection into the stat structure */
 void			flowstat_perror(char *str);		/* log error message with syslog/print on stdout if DEGUG is defne */
-int			get_local_ip(void);			/* return local ip of INTERFACE */
+u_int32_t      		get_local_ip(void);			/* return local ip of INTERFACE */
 int			demonize(void);				/* return -1 if another instance is running and 0 if not */
 struct ipulog_handle    *verified_ipulog_create_handle(u_int32_t, u_int32_t);
 flux			*extract_flux(connection *current_connection, flux *prev, flux *delete);
 flux    		*flux_already_listed(connection *current_connection, packet_info *pkt_info);
 connection		*ip_already_listed(u_int32_t ip);
+void			add_flux_to_end_list(flux **head, flux **tail, flux *new);
+void			pop_and_push_flux(flux **head, flux **tail, flux *new);
+void			pop_flux(flux **head, flux **tail);
+u_int32_t      		size_flux_list(flux *head);
 
 #endif	/* __FLOWSTAT_H__*/

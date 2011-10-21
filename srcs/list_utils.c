@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep 21 09:41:42 2011 Jonathan Machado
-** Last update Thu Oct 20 11:13:46 2011 Jonathan Machado
+** Last update Fri Oct 21 12:14:41 2011 Jonathan Machado
 */
 
 #include <stdlib.h>
@@ -36,6 +36,38 @@ flux			*extract_flux(connection *current_connection, flux *prev, flux *extract)
   return (extract);
 }
 
+u_int32_t      		size_flux_list(flux *head)
+{
+  int			i;
+  flux			*cur = NULL;
+
+  for (i = 0, cur = head; cur!= NULL; cur = cur->next, i++);
+  return (i);
+}
+
+void			pop_and_push_flux(flux **head, flux **tail, flux *new)
+{
+  pop_flux(head, tail);
+  add_flux_to_end_list(head, tail,new);
+}
+
+void			pop_flux(flux **head, flux **tail)
+{
+  flux			*prev = NULL;
+
+  if (*head && *tail) {
+    prev = *head;
+    if (*head == *tail) {
+      *tail = NULL;
+      *head = NULL;
+    } else {
+      *head = (*head)->next;
+    }
+    free(prev);
+  }
+}
+
+
 void			delete_flux(connection *current_connection, flux *prev, flux *delete)
 {
   if (delete != NULL) {
@@ -49,6 +81,15 @@ void			delete_flux(connection *current_connection, flux *prev, flux *delete)
     free(delete);
     delete = NULL;
   }
+}
+
+void			add_flux_to_end_list(flux **head, flux **tail, flux *new)
+{
+  if (*head == NULL)
+    *head = new;
+  else
+    (*tail)->next = new;
+  *tail = new;
 }
 
 /*

@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep 21 17:45:46 2011 Jonathan Machado
-** Last update Fri Oct 14 16:03:34 2011 Jonathan Machado
+** Last update Fri Oct 21 12:23:40 2011 Jonathan Machado
 */
 
 #include <stdlib.h>
@@ -28,6 +28,10 @@ static void	       	update_stat(connection *cnt, flux *flx)
   struct flux_stat     	*stat = NULL;
 
   stat = &cnt->stat;
+  if (size_flux_list(stat->history_head) > info.options.history_size)
+    pop_and_push_flux(&stat->history_head, &stat->history_tail, flx);
+  else
+    add_flux_to_end_list(&stat->history_head, &stat->history_tail, flx);
   switch (flx->protocol)
     {
     case IPPROTO_TCP:
@@ -41,6 +45,12 @@ static void	       	update_stat(connection *cnt, flux *flx)
       }
       break;
     case IPPROTO_ICMP:
+      if (flx->protocol_data.icmp.type == ICMP_DEST_UNREACH) {
+	++stat->ko;
+	free(stat->last_ko);
+	stat->last_ko = xmalloc(sizeof(flux));
+	stat->last_ko = memcpy(stat->last_ko, flx, sizeof(flux));
+      }
       stat->icmp++;
       break;
     case IPPROTO_UDP:
