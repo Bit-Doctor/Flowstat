@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep 21 09:41:42 2011 Jonathan Machado
-** Last update Fri Oct 21 12:14:41 2011 Jonathan Machado
+** Last update Mon Oct 24 09:53:24 2011 Jonathan Machado
 */
 
 #include <stdlib.h>
@@ -41,7 +41,7 @@ u_int32_t      		size_flux_list(flux *head)
   int			i;
   flux			*cur = NULL;
 
-  for (i = 0, cur = head; cur!= NULL; cur = cur->next, i++);
+  for (i = 0, cur = head; cur != NULL; cur = cur->next, i++);
   return (i);
 }
 
@@ -116,6 +116,7 @@ void			free_connection_list(connection *head)
     if (info.options.dns)
       free(head->hostname);
     free_flux_list(head->head);
+    free_flux_list(head->stat.history_head);
     pthread_mutex_destroy(&head->lock);
     free(head);
     head = NULL;

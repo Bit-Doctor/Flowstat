@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep 21 17:45:46 2011 Jonathan Machado
-** Last update Fri Oct 21 12:23:40 2011 Jonathan Machado
+** Last update Mon Oct 24 09:45:37 2011 Jonathan Machado
 */
 
 #include <stdlib.h>
@@ -77,8 +77,6 @@ static void		flush_closed_flux(void)
 	       cur_flux->protocol_data.tcp.stts != closed))) {
 	  extract = extract_flux(cur_connection, prev_flux, cur_flux);
 	  update_stat(cur_connection, extract);
-	  free(extract);
-	  extract = NULL;
 	  cur_flux = prev_flux;
 	}
 	prev_flux = cur_flux;
