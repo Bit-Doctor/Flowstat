@@ -19,10 +19,12 @@ Connection telnet
 
 * **-d** - activate dns resolution of ip
 * **-l** - advanced output                   
+* **-L** - set a limit of different ip listed (5000 by default)
+* **-H** - set the size of the closed connection's history (50 by default)
 
 #Comande
 * **ip** - show ip connected 
-* **flux param** - where param is an ip, show all active/non flushed connection from/to param
+* **connection param** - where param is an ip, show all active/non flushed connection from/to param
 * **stat param** - where param is an ip, show stat of param
 * **exit** - close the connection
 * **kill** - kill the deamon
