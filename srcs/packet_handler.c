@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:28:37 2011 Jonathan Machado
-** Last update Fri Oct 21 12:09:41 2011 Jonathan Machado
+** Last update Tue Nov 22 16:26:58 2011 Jonathan Machado
 */
 
 #include <string.h>
@@ -63,7 +63,7 @@ static void    		tcpheader_handler(void *protocol_header, packet_info *pkt_info)
 
   tcph = protocol_header;
   if (pkt_info->input)
-    pkt_info->port = (u_int16_t)ntohs(tcph->source);
+    pkt_info->port = ntohs(tcph->source);
   else
     pkt_info->port = ntohs(tcph->dest);
   if (tcph->fin)
@@ -98,7 +98,7 @@ static packet_info     	*get_packet_information(ulog_packet_msg_t *pkt)
   iph = (struct iphdr *)pkt->payload;
   pkt_info->ip = ntohl(iph->daddr);
   pkt_info->data = ntohs(iph->tot_len);
-  if (ntohl(iph->daddr) == info.local_ip || ntohl(iph->daddr) == LOCALIP) {
+  if (ntohl(iph->daddr) == info.local_ip) {
     pkt_info->ip = ntohl(iph->saddr);
     pkt_info->input = 1;
   }

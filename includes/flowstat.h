@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Wed Sep  7 14:24:24 2011 Jonathan Machado
-** Last update Fri Oct 21 12:13:44 2011 Jonathan Machado
+** Last update Tue Nov 22 16:27:10 2011 Jonathan Machado
 */
 
 #ifndef __FLOWSTAT_H__
@@ -25,7 +25,6 @@
 # define BUFFER_SIZE		2048
 # define GROUP_NETLINK		1	/* Group link for the connection to iptables, by default 1 */
 # define INTERFACE		"eth0"	/* Wich interface flowstat must keep the ip */
-# define LOCALIP		16777303 /* 127.0.0.1 */
 # define INTTOIP(addr) ((unsigned char *)&addr)[3], ((unsigned char *)&addr)[2], \
     ((unsigned char *)&addr)[1], ((unsigned char *)&addr)[0]
 /*
