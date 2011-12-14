@@ -5,18 +5,20 @@
 ## Login   <jonathan.machado@epitech.net>
 ## 
 ## Started on  Fri Sep  2 11:36:43 2011 Jonathan Machado
-## Last update Mon Dec 12 17:40:04 2011 Jonathan Machado
+## Last update Tue Dec 13 16:14:33 2011 Jonathan Machado
 ##
 
 NAME=		flowstat
 USAGE=		
-LIB_DIR=	libipulog/
-LIB=		$(LIB_DIR)libipulog.a
+LIB_DIR=	liblist/
+LIB=		$(LIB_DIR)liblist.a
 INCLUDES_DIR=	includes/
 INCLUDES=	$(INCLUDES_DIR)flowstat.h
 SRCS_DIR=	srcs/
 SRCS=		$(wildcard $(SRCS_DIR)*.c)
-CFLAGS=		-W -Wall -ansi -I$(INCLUDES_DIR) -pthread -Ilibipulog/include/ -D_BSD_SOURCE -D_XOPEN_SOURCE -ggdb
+LFLAGS=		-pthread -lnetfilter_log -lnfnetlink -lrt -lglib-2.0 -lgthread-2.0
+IFLAGS=		-I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include -I$(LIB_DIR) -I$(INCLUDES_DIR) 
+CFLAGS=		-W -Wall $(IFLAGS) $(LFLAGS) -O3
 
 OBJS_DIR=       $(SRCS_DIR).objs/
 OBJS=		$(SRCS:%.c=%.o)
@@ -49,3 +51,4 @@ clean:		lib_clean
 $(OBJS_DIR)%.o: $(SRCS_DIR)%.c $(INCLUDES)
 		@$(CC) -c $(CFLAGS) -o $@ $<
 		@echo -e "[\033[32mOK\033[0m] Compiled" $<
+

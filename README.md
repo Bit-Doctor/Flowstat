@@ -1,9 +1,9 @@
 ##Flowstat
-This deamon will analyze all packet redirected to ULOG rule in iptables
+This deamon will analyze all packet redirected to NFLOG rule in iptables
 and make statistics on internet flow
 
 #Usage
-You need to be root to lunch flowstat :
+You need to be root to start flowstat :
 
     ./flowstat
 
@@ -17,23 +17,16 @@ Connection telnet
 
 #option
 
-* **-d** - activate dns resolution of ip
-* **-l** - advanced output                   
-* **-L** - set a limit of different ip listed (5000 by default)
+* **-c** - change the listening channel of the netlink socket (channel 0 by default)
+* **-l** - set a limit of different ip listed (no limit by default)
 * **-H** - set the size of the closed connection's history (50 by default)
 
 #Comande
-* **ip** - show ip connected 
-* **connection param** - where param is an ip, show all active/non flushed connection from/to param
-* **stat param** - where param is an ip, show stat of param
+* **ip** - show the listed ip
+* **connection param** - where param is a peer of ips, show all active/non flushed connection from/to param
+* **stat param** - where param is a peer of ips, show stat of param
 * **exit** - close the connection
 * **kill** - kill the deamon
 
-#Output
-**Basic**
-
-    (dns)|protocole|port/type|first packet|last packet
-
-**Long**
-
-    (dns)|protocole|port/type|first packet|last packet|duration|input packet|input data|input obs|input obp|output packet|output data|output obs|output obp
+#connection output
+port|input packet|input data|output packet|output data|first packet|last packet

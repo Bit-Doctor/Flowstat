@@ -1,169 +1,153 @@
 /*
-** flowstat.h for flowstat in /home/jonathan/Projets/flowstat
+** flowstat.h for flowstat in /home/jonathan/Projets/test
 **
 ** Made by Jonathan Machado
 ** Login   <jonathan.machado@epitech.net>
 **
-** Started on  Wed Sep  7 14:24:24 2011 Jonathan Machado
-** Last update Tue Nov 22 16:27:10 2011 Jonathan Machado
+** Started on  Thu Nov 10 09:55:11 2011 Jonathan Machado
+** Last update Tue Dec 13 12:19:30 2011 Jonathan Machado
 */
 
 #ifndef __FLOWSTAT_H__
 # define __FLOWSTAT_H__
 
+# include <stdio.h>
+# include <stdlib.h>
 # include <unistd.h>
+# include <errno.h>
+# include <glib.h>
 # include <pthread.h>
-# include "libipulog/libipulog.h"
-/*
-**
-**		DEFINE
-**
-*/
+# include <semaphore.h>
+# include <libnetfilter_log/libnetfilter_log.h>
+# include "libdatac_list.h"
 
-# define ULOGD_RMEM_DEFAULT	150000	/* Size of the receive buffer for the netlink socket. */
-					/* If you have _big_ in-kernel queues, you may have to increase this number.*/
-# define BUFFER_SIZE		2048
-# define GROUP_NETLINK		1	/* Group link for the connection to iptables, by default 1 */
-# define INTERFACE		"eth0"	/* Wich interface flowstat must keep the ip */
-# define INTTOIP(addr) ((unsigned char *)&addr)[3], ((unsigned char *)&addr)[2], \
-    ((unsigned char *)&addr)[1], ((unsigned char *)&addr)[0]
-/*
-**
-**		ENUM
-**
-*/
+/*****************************************
+**					**
+**		  DEFINE		**
+**					**
+*****************************************/
 
-typedef enum	status
+# define BUFFER_SIZE 4096
+typedef int (*CbFunc)(struct nflog_g_handle *, struct nfgenmsg *, struct nflog_data *, void *);
+
+/*****************************************
+**					**
+**	       	   ENUM   		**
+**					**
+*****************************************/
+
+typedef enum		status_e
   {
-    reseted = -1,
-    connected,
-    one_peer_closed,
-    wait_last_ack,
-    closed
-  }		status;
+    RESET = -1,
+    ESTABLISHED,
+    FINWAIT,
+    CLOSING,
+    CLOSED
+  }			status_t;
 
-/*
-**
-**		STRUCTURE
-**
-*/
-
-typedef struct	packet_info
-{
-  u_int32_t		ip;
-  u_int16_t		input;
-  u_int16_t		protocol;
-  time_t		time;
-  u_int16_t		port;
-  u_int16_t		data;
-  u_int8_t		type;
-  u_int8_t		fin;
-  u_int8_t		rst;
-  u_int8_t		ack;
-}		packet_info;
-
-struct			flux_stat
-{
-  u_int32_t		ok;
-  u_int32_t		ko;
-  u_int32_t		udp;
-  u_int32_t		icmp;
-  u_int32_t		other;
-  struct flux		*last_ko;
-  struct flux		*history_head;
-  struct flux		*history_tail;
-};
-
-typedef struct        	flux
-{
-  u_int16_t		protocol;
-  time_t       	       	first_packet;
-  time_t               	last_packet;
-  u_int32_t    	       	input_data;
-  u_int32_t    		input_packet;
-  u_int32_t   	       	output_data;
-  u_int32_t    		output_packet;
-  union
+typedef enum		message_type_e
   {
-    struct
-    {
-      u_int8_t		type;
-    }  		        icmp;
-    struct
-    {
-      u_int16_t		port;
-    }  			udp;
-    struct
-    {
-      u_int16_t		port;
-      status		stts;
-    }	       		tcp;
-  }    	       	       	protocol_data;
-  struct flux		*next;
-}     	     		flux;
+    ADD_PACKET,
+    GET_CONNECTIONS_LIST,
+    GET_IP_LIST,
+    GET_PEER_STAT,
+    INCR_UDP,
+    INCR_ICMP,
+    INCR_OTHER,
+    INCR_KO,
+    RESET_HASH_TABLE,
+    KILL
+  }			message_type_t;
 
-typedef struct		connection
+/*****************************************
+**					**
+**		STRUCTURE		**
+**					**
+*****************************************/
+
+typedef struct		message_queue_s
 {
-  u_int32_t		ip;
+  message_type_t      	type;
+  sem_t			semaphore;
+  void			*data;
+}			message_queue_t;
+
+typedef struct		connection_s
+{
+  u_int16_t		port;	    /* port number */
+  unsigned int	       	in_packet;  /* nb of input packet */
+  unsigned int	       	in_data;    /* nb of input data */
+  unsigned int	       	out_packet; /* nb of output packet */
+  unsigned int	       	out_data; /* nb of output data */
+  time_t	       	first_packet;
+  time_t		last_packet;
+  status_t		status;	/* status of the connection */
+}			connection_t;
+
+typedef struct		peer_stat_s
+{
+  int			udp;	/* nb of udp packet */
+  int			icmp;	/* nb of icmp packet */
+  int			other;	/* nb of other protocol packet */
+  int			tcp;	/* nb of tcp connections */
+  int			ko;	/* nb of bad connections/host unreachable */
+  List			*history;
+}			peer_stat_t;
+
+typedef struct		ip_peer_s
+{
+  u_int32_t		haddr; 	/* ip host */
+  u_int32_t		paddr;	/* ip peer */
+}			ip_peer_t;
+
+typedef struct		peer_s
+{
+  char			*interface;
   char			*hostname;
-  u_int32_t    		number_flow;
-  struct flux_stat	stat;
-  struct flux		*head;
-  struct flux		*tail;
-  struct connection    	*next;
-  pthread_mutex_t	lock;
-}			connection;
+  ip_peer_t		ips;
+  List			*connections;
+  peer_stat_t		stat;
+}			peer_t;
 
-struct			global_info
+typedef struct		global_info_s
 {
-  struct
-  {
-    char		advanced;
-    char		dns;
-    u_int32_t  		ip_limit;
-    u_int32_t		history_size;
+  u_int8_t		finish;	/* flag for end properly the deamon */
+  int			netlink_fd; /* fd of the netlink socket */
+  struct nflog_handle	*handle;
+  struct nflog_g_handle *g_handle;
+  GAsyncQueue		*packet_queue;
+  GThreadPool		*packet_handler;
+  struct {
+    u_int32_t	       	max_peer;
+    u_int32_t  		history_size;
   }			options;
-  u_int32_t	       	local_ip;
-  unsigned char	       	*buffer;
-  struct ipulog_handle	*connection;
-  u_int32_t    		number_connection;
-  pthread_t		threads[3];
-  struct connection    	*head;
-  struct connection    	*tail;
-};
+}			global_info;
 
-struct			cmd_info
+typedef struct		cmd_info_s
 {
   char			*cmd;
-  int			nb_param;
-  void			(*f)(char **);
-};
+  short			nb_param;
+  void			(*f)(global_info *, char **);
+}			cmd_info_t;
 
-/*
-**
-**		PROTOTYPE
-**
-*/
+/*****************************************
+**					**
+**		PROTOTYPE		**
+**					**
+*****************************************/
 
-void			*xmalloc(int);
-void			free_tab(char **tab);
-void			free_at_interupt(void);
-void		 	*client_handler(void *ptr);
-void			delete_flux(connection *current_connection, flux *prev, flux *delete);
-void			free_connection_list(connection *head);
-void			*read_and_analyze(void *ptr);
-void			*flush_and_calc(void *ptr);
-void			flush_closed_connection(void);		/* flush closed connection into the stat structure */
-void			flowstat_perror(char *str);		/* log error message with syslog/print on stdout if DEGUG is defne */
-u_int32_t      		get_local_ip(void);			/* return local ip of INTERFACE */
-int			demonize(void);				/* return -1 if another instance is running and 0 if not */
-struct ipulog_handle    *verified_ipulog_create_handle(u_int32_t, u_int32_t);
-flux			*extract_flux(connection *current_connection, flux *prev, flux *delete);
-flux    		*flux_already_listed(connection *current_connection, packet_info *pkt_info);
-connection		*ip_already_listed(u_int32_t ip);
-void			add_flux_to_end_list(flux **head, flux **tail, flux *new);
-void			pop_and_push_flux(flux **head, flux **tail, flux *new);
-void			pop_flux(flux **head, flux **tail);
-u_int32_t      		size_flux_list(flux *head);
+void	packet_handler(void *, global_info *);
+void	read_and_analyze(global_info *);
+void	hashtable_handler(global_info *);
+void   	*client_handler(global_info *);
+int	callback(struct nflog_g_handle *, struct nfgenmsg *,
+		 struct nflog_data *, void *);
+void	free_peer_t(peer_t *);
+void   	flowstat_perror(char *);
+void   	free_tab(char **);
+int	compare_connection(connection_t *, connection_t *);
+char	*get_hostname(u_int32_t ip);
+void	free_message_t(message_queue_t *msg);
+int    	demonize(void);
 
 #endif	/* __FLOWSTAT_H__*/

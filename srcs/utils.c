@@ -1,56 +1,99 @@
 /*
-** utils.c for flowstat in /home/jonathan/Projets/flowstat
+** utils.c for flowstat in /home/jonathan/Projets/test
 **
 ** Made by Jonathan Machado
 ** Login   <jonathan.machado@epitech.net>
 **
-** Started on  Tue Sep 20 11:22:53 2011 Jonathan Machado
-** Last update Fri Oct 21 12:14:56 2011 Jonathan Machado
+** Started on  Tue Nov 22 15:08:33 2011 Jonathan Machado
+** Last update Tue Dec 13 16:14:01 2011 Jonathan Machado
 */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <syslog.h>
+#include <netdb.h>
 #include <signal.h>
-#include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
+#include <fcntl.h>
+#include <string.h>
+#include <syslog.h>
 #include <arpa/inet.h>
-#include <net/if.h>
-#include <ifaddrs.h>
+#include <sys/socket.h>
 #include "flowstat.h"
 
-extern struct global_info	info;
-
-u_int32_t      		get_local_ip(void)
+void	free_peer_t(peer_t *peer)
 {
-  int			ret;
-  struct ifaddrs	*myaddrs, *ifa;
-  struct sockaddr_in	*socket;
-
-  ret = 0;
-  if(getifaddrs(&myaddrs) != 0)
-    {
-      flowstat_perror("getifaddrs");
-      exit(EXIT_FAILURE);
-    }
-  for (ifa = myaddrs; ifa != NULL; ifa = ifa->ifa_next)
-    {
-      if (ifa->ifa_addr != NULL && ifa->ifa_addr->sa_family == AF_INET)
-        {
-          socket = (struct sockaddr_in *)ifa->ifa_addr;
-          if (strcmp(ifa->ifa_name, INTERFACE) == 0) /* keep the ip of INTERFACE */
-            ret = socket->sin_addr.s_addr;
-	}
-    }
-  freeifaddrs(myaddrs);
-  return (ntohl(ret));
+  free(peer->interface);
+  free(peer->hostname);
+  delete_list(peer->connections, &free);
+  delete_list(peer->stat.history, &free);
+  free(peer);
 }
 
-int			demonize(void)
+int	compare_connection(connection_t *cnt1, connection_t *cnt2)
+{
+  int	ret;
+
+  ret = 1;
+  if (cnt1->port == cnt2->port)
+    ret = 0;
+  return (ret);
+}
+
+void   	flowstat_perror(char *str)
+{
+  if (str && !errno)
+  syslog(LOG_ERR, "%s\n", str);
+  else if (str && errno)
+    syslog(LOG_ERR, "%s: %m\n", str);
+  else if (errno)
+    syslog(LOG_ERR, "%m\n");
+}
+
+void   	free_tab(char **tab)
+{
+  int	i;
+
+  for (i = 0; tab[i] != NULL; i++) {
+    free(tab[i]);
+    tab[i] = NULL;
+  }
+  free(tab);
+  tab = NULL;
+}
+
+char	*get_hostname(u_int32_t ip)
+{
+  struct sockaddr_in    socket;
+  char                  *dns;
+
+  dns = malloc(1024 * sizeof(*dns));
+  memset(dns, 0, 1024 * sizeof(*dns));
+  memset(&socket, 0, sizeof(socket));
+  socket.sin_family = AF_INET;
+  socket.sin_addr.s_addr = ip;
+  socket.sin_port = htons(80);
+  getnameinfo((const struct sockaddr *)&socket, sizeof(socket),
+	      dns, 1024, NULL, 0, 0);
+  return (dns);
+}
+
+void	free_message_t(message_queue_t *msg)
+{
+ struct {
+    u_int8_t	fin;
+    u_int8_t	ack;
+    u_int8_t	rst;
+    u_int32_t	idx;
+    peer_t	*peer;
+  }			*del;
+
+  if (msg->type == ADD_PACKET) {
+    del = msg->data;
+    free_peer_t(del->peer);
+    free(msg->data);
+    free(msg);
+  }
+}
+
+int    	demonize(void)
 {
   int			pid;
   int			fd;
@@ -95,28 +138,4 @@ int			demonize(void)
   signal(SIGTTOU, SIG_IGN);
   signal(SIGTTIN, SIG_IGN);
   return (1);
-}
-
-void			free_at_interupt(void)
-{
-  free(info.buffer);
-  info.buffer = NULL;
-  ipulog_destroy_handle(info.connection);
-  info.connection = NULL;
-  free_connection_list(info.head);
-  info.head = NULL;
-  closelog();
-  pthread_exit((void*)EXIT_SUCCESS);
-}
-
-void			free_tab(char **tab)
-{
-  int			i;
-
-  for (i = 0; tab[i] != NULL; i++) {
-    free(tab[i]);
-    tab[i] = NULL;
-  }
-  free(tab);
-  tab = NULL;
 }
