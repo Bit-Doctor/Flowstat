@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Thu Nov 10 09:18:39 2011 Jonathan Machado
-** Last update Fri Dec 16 10:28:17 2011 Jonathan Machado
+** Last update Mon Dec 19 14:45:23 2011 Jonathan Machado
 */
 
 #include <unistd.h>
@@ -27,13 +27,18 @@ void	init(global_info *info)
     info->finish = 1;
     exit(EXIT_FAILURE);
   }
-  info->packet_handler = g_thread_pool_new((GFunc)&packet_handler,
-  					   info, 100, TRUE, NULL);
-  if (!info->packet_handler) {
-      flowstat_perror("g_thread_pool_new");
-    info->finish = 1;
-    exit(EXIT_FAILURE);
-  }
+  /*
+  ** this is not init since nfa is not copied in packet_handler.c
+  **
+  ** info->packet_handler = g_thread_pool_new((GFunc)&packet_handler,
+  ** 					   info, 100, TRUE, NULL);
+  ** if (!info->packet_handler) {
+  **     flowstat_perror("g_thread_pool_new");
+  **   info->finish = 1;
+  **   exit(EXIT_FAILURE);
+  ** }
+  **
+  */
   if (g_thread_create((GThreadFunc)&hashtable_handler, info, TRUE, NULL) == NULL) {
     flowstat_perror("g_thread_create");
     info->finish = 1;
