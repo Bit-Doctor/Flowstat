@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Mon Nov 28 10:33:47 2011 Jonathan Machado
-** Last update Mon Dec 19 12:32:57 2011 Jonathan Machado
+** Last update Mon Dec 19 14:56:44 2011 Jonathan Machado
 */
 
 #include <string.h>
@@ -17,6 +17,7 @@
 extern int		serv_socket;
 extern int		clnt_socket;
 
+static void		help_cmd(global_info *info, char **param);
 static void		exit_cmd(global_info *info, char **param);
 static void	       	kill_cmd(global_info *info, char **param);
 static void		stat_cmd(global_info *info, char **param);
@@ -27,6 +28,7 @@ static void		flush_cmd(global_info *info, char **param);
 
 cmd_info_t		cmd_list[] =
   {
+    {"help", 0, &help_cmd},
     {"exit", 0, &exit_cmd},
     {"kill", 0, &kill_cmd},
     {"connection", 2, &connection_cmd},
@@ -36,6 +38,14 @@ cmd_info_t		cmd_list[] =
     {"flush",0, &flush_cmd},
     {NULL,0,NULL},
   };
+
+static void		help_cmd(global_info *info, char **param)
+{
+  (void)param;
+  (void)info;
+  send(clnt_socket, "connection exit flush flux help ip stat kill\n",
+       strlen("connection exit flush flux help ip stat kill\n"), 0);
+}
 
 static void		flush_cmd(global_info *info, char **param)
 {
