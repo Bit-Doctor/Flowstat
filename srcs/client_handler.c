@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Mon Nov 28 10:23:58 2011 Jonathan Machado
-** Last update Tue Dec 13 13:45:40 2011 Jonathan Machado
+** Last update Fri Dec 16 15:17:26 2011 Jonathan Machado
 */
 
 #include <stdlib.h>
@@ -49,8 +49,8 @@ static void	       	handle_cmd(global_info *info, int nb, char **param)
 }
 
 /*
-**	get the next command and separe each word in a aray
-**	return that aray and fill nb with the number of word
+**	get the next command and separe each word in a array
+**	return that array and fill nb with the number of word
 */
 static char		**get_next_cmd(int *nb)
 {

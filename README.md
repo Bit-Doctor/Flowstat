@@ -25,6 +25,8 @@ Connection telnet
 * **ip** - show the listed ip
 * **connection param** - where param is a peer of ips, show all active/non flushed connection from/to param
 * **stat param** - where param is a peer of ips, show stat of param
+* **flux param** - where param is a peer of ips, show history of param
+* **flush** - flush the current data
 * **exit** - close the connection
 * **kill** - kill the deamon
 
