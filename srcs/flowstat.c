@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Thu Nov 10 09:18:39 2011 Jonathan Machado
-** Last update Tue Dec 13 13:48:47 2011 Jonathan Machado
+** Last update Fri Dec 16 10:28:17 2011 Jonathan Machado
 */
 
 #include <unistd.h>
@@ -105,12 +105,15 @@ void	fill_option(int ac, char **av, global_info *info)
     case 'h':
       usage(av[0]);
       g_thread_exit(NULL);
+      break;
     case '?':
       usage(av[0]);
       g_thread_exit(NULL);
+      break;
     default:
       usage(av[0]);
       g_thread_exit(NULL);
+      break;
     }
   }
 }
@@ -124,6 +127,8 @@ int	main(int ac, char **av)
   if (demonize()) {
     init(&info);
     read_and_analyze(&info);
+  } else {
+    printf("%s\n", "daemon already running");
   }
   closelog();
   g_thread_exit(NULL);
