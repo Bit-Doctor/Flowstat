@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Thu Nov 10 09:55:11 2011 Jonathan Machado
-** Last update Mon Dec 19 12:28:50 2011 Jonathan Machado
+** Last update Mon Dec 19 15:30:40 2011 Jonathan Machado
 */
 
 #ifndef __FLOWSTAT_H__
@@ -28,6 +28,7 @@
 *****************************************/
 
 # define BUFFER_SIZE 4096
+# define THREAD_POOL_SIZE 10
 typedef int (*CbFunc)(struct nflog_g_handle *, struct nfgenmsg *, struct nflog_data *, void *);
 
 /*****************************************

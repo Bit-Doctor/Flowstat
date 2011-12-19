@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Thu Nov 10 09:18:39 2011 Jonathan Machado
-** Last update Mon Dec 19 14:45:23 2011 Jonathan Machado
+** Last update Mon Dec 19 15:30:12 2011 Jonathan Machado
 */
 
 #include <unistd.h>
@@ -31,7 +31,7 @@ void	init(global_info *info)
   ** this is not init since nfa is not copied in packet_handler.c
   **
   ** info->packet_handler = g_thread_pool_new((GFunc)&packet_handler,
-  ** 					   info, 100, TRUE, NULL);
+  ** 					   info, THREAD_POOL_SIZE, TRUE, NULL);
   ** if (!info->packet_handler) {
   **     flowstat_perror("g_thread_pool_new");
   **   info->finish = 1;
