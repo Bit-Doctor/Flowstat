@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Tue Nov 22 15:08:33 2011 Jonathan Machado
-** Last update Tue Dec 13 16:14:01 2011 Jonathan Machado
+** Last update Mon Dec 19 11:23:28 2011 Jonathan Machado
 */
 
 #include <netdb.h>
@@ -33,6 +33,16 @@ int	compare_connection(connection_t *cnt1, connection_t *cnt2)
 
   ret = 1;
   if (cnt1->port == cnt2->port)
+    ret = 0;
+  return (ret);
+}
+
+int	compare_history(history_t *hist, int *port)
+{
+  int	ret;
+
+  ret = 1;
+  if (*port == hist->port)
     ret = 0;
   return (ret);
 }

@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Thu Nov 10 09:55:11 2011 Jonathan Machado
-** Last update Tue Dec 13 12:19:30 2011 Jonathan Machado
+** Last update Mon Dec 19 12:28:50 2011 Jonathan Machado
 */
 
 #ifndef __FLOWSTAT_H__
@@ -49,6 +49,7 @@ typedef enum		message_type_e
   {
     ADD_PACKET,
     GET_CONNECTIONS_LIST,
+    GET_HISTORY,
     GET_IP_LIST,
     GET_PEER_STAT,
     INCR_UDP,
@@ -93,6 +94,14 @@ typedef struct		peer_stat_s
   int			ko;	/* nb of bad connections/host unreachable */
   List			*history;
 }			peer_stat_t;
+
+typedef struct		history_s
+{
+  u_int16_t		port;
+  unsigned long int	nb;
+  time_t	       	first;
+  time_t		last;
+}			history_t;
 
 typedef struct		ip_peer_s
 {
@@ -146,6 +155,7 @@ void	free_peer_t(peer_t *);
 void   	flowstat_perror(char *);
 void   	free_tab(char **);
 int	compare_connection(connection_t *, connection_t *);
+int	compare_history(history_t *hist, int *port);
 char	*get_hostname(u_int32_t ip);
 void	free_message_t(message_queue_t *msg);
 int    	demonize(void);

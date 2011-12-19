@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Thu Nov 10 12:20:38 2011 Jonathan Machado
-** Last update Mon Dec 12 14:34:39 2011 Jonathan Machado
+** Last update Mon Dec 19 12:36:43 2011 Jonathan Machado
 */
 
 #include <net/if.h>
@@ -38,6 +38,32 @@ static status_t	update_connection(connection_t *old, connection_t *new,
   return (old->status);
 }
 
+static	void	update_history(List *history, Link *link, global_info *info)
+{
+  Link		*old = NULL;
+  history_t	*new = NULL;
+  connection_t	*cnt = NULL;
+
+  cnt = link->ptr;
+  old = lookup(history, &cnt->port,
+		(int (*)(void *, void *))&compare_history);
+  if (old == NULL) {
+    new = malloc(sizeof(*new));
+    new->nb = 1;
+    new->port = cnt->port;
+    new->first = cnt->first_packet;
+    new->last = new->first;
+    link->ptr = new;
+    push_end(history, link);
+  } else {
+    ((history_t*)old->ptr)->nb++;
+    ((history_t*)old->ptr)->last = cnt->first_packet;
+  }
+  free(cnt);
+  if (history->size > info->options.history_size)
+    delete_link(pop_front(history), &free);
+}
+
 /*
 ** if g_hash_table_lookup return NULL, the peer is not listed
 ** so we add new->peer in the hashtable.
@@ -63,7 +89,7 @@ static void    	message_add_packet(GHashTable *hshtbl, void *ptr, global_info *i
   key = malloc(sizeof(*key));
   *key = new->peer->ips.haddr + new->peer->ips.paddr;
   peer = g_hash_table_lookup(hshtbl, key);
-  if (peer == NULL) {
+  if (peer == NULL) { 		/* new peer */
     new->peer->hostname = get_hostname(new->peer->ips.paddr);
     new->peer->interface = malloc(IF_NAMESIZE *
   				  sizeof(*new->peer->interface));
@@ -72,14 +98,14 @@ static void    	message_add_packet(GHashTable *hshtbl, void *ptr, global_info *i
     if (info->options.max_peer != 0 &&
         g_hash_table_size(hshtbl) > info->options.max_peer)
       g_hash_table_remove_all(hshtbl);	/* flush hashtable */
-  } else {
+  } else {				/* peer listed */
     free(key);
-    if (new->peer->connections->head != NULL) {
+    if (new->peer->connections->head != NULL) { /* tcp connection */
       link = lookup(peer->connections, new->peer->connections->head->ptr,
   		    (int (*)(void *, void *))&compare_connection);
-      if (link == NULL) {
+      if (link == NULL) { 	/* new connection */
   	push_end(peer->connections, pop_front(new->peer->connections));
-      } else {
+      } else { 			/* connection listed */
   	status = update_connection(link->ptr, new->peer->connections->head->ptr,
   				   new->ack, new->fin, new->rst);
   	if (status == CLOSED || status == RESET) {
@@ -88,11 +114,9 @@ static void    	message_add_packet(GHashTable *hshtbl, void *ptr, global_info *i
 	  if (status == RESET) {
 	    peer->stat.ko++;
 	    delete_link(link, &free);
-	  } else {
+	  } else { 		/* if status == CLOSED */
 	    peer->stat.tcp++;
-	    push_end(peer->stat.history, link);
-	    if (peer->stat.history->size > info->options.history_size)
-	      delete_link(pop_front(peer->stat.history), &free);
+	    update_history(peer->stat.history, link, info);
 	  }
   	}
       }
@@ -119,6 +143,24 @@ static void   	message_get_connections_list(GHashTable *hshtbl,
     message->data = NULL;
   sem_post(&message->semaphore);
 }
+
+/*
+** get the history list and notify the other side
+** that he can now reed in message->data
+*/
+static void   	message_get_history(GHashTable *hshtbl,
+				    message_queue_t *message)
+{
+  peer_t	*peer = NULL;
+
+  peer = g_hash_table_lookup(hshtbl, message->data);
+  if (peer != NULL)
+    message->data = peer->stat.history;
+  else
+    message->data = NULL;
+  sem_post(&message->semaphore);
+}
+
 /*
 ** same as message_get_connections_list but fill message->data
 ** with the ip_list
@@ -183,6 +225,9 @@ void			hashtable_handler(global_info *info)
       break;
     case GET_CONNECTIONS_LIST:
       message_get_connections_list(peer_hshtbl, message);
+      break;
+    case GET_HISTORY:
+      message_get_history(peer_hshtbl, message);
       break;
     case GET_IP_LIST:
       message_get_ip_list(peer_hshtbl, message);

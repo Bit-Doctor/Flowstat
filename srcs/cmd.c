@@ -5,7 +5,7 @@
 ** Login   <jonathan.machado@epitech.net>
 **
 ** Started on  Mon Nov 28 10:33:47 2011 Jonathan Machado
-** Last update Tue Dec 13 15:04:13 2011 Jonathan Machado
+** Last update Mon Dec 19 12:32:57 2011 Jonathan Machado
 */
 
 #include <string.h>
@@ -21,6 +21,7 @@ static void		exit_cmd(global_info *info, char **param);
 static void	       	kill_cmd(global_info *info, char **param);
 static void		stat_cmd(global_info *info, char **param);
 static void		connection_cmd(global_info *info, char **param);
+static void		flux_cmd(global_info *info, char **param);
 static void		ip_cmd(global_info *info, char **param);
 static void		flush_cmd(global_info *info, char **param);
 
@@ -29,6 +30,7 @@ cmd_info_t		cmd_list[] =
     {"exit", 0, &exit_cmd},
     {"kill", 0, &kill_cmd},
     {"connection", 2, &connection_cmd},
+    {"flux", 2, &flux_cmd},
     {"ip", 0, &ip_cmd},
     {"stat", 2, &stat_cmd},
     {"flush",0, &flush_cmd},
@@ -134,9 +136,54 @@ static void		connection_cmd(global_info *info, char **param)
   sem_wait(&message.semaphore);
   list = message.data;
   if (list != NULL) {
-    send(clnt_socket, "port|ip_pkt|in_data|out_pkt|out_data|first_pkt|last_pkt\n",
-	 strlen("port|ip_pkt|in_data|out_pkt|out_data|first_pkt|last_pkt\n"), 0);
-    iterate(list, (void (*)(void *))&send_cnt_info);
+    if (list->size != 0) {
+      send(clnt_socket, "port|ip_pkt|in_data|out_pkt|out_data|first_pkt|last_pkt\n",
+	   strlen("port|ip_pkt|in_data|out_pkt|out_data|first_pkt|last_pkt\n"), 0);
+      iterate(list, (void (*)(void *))&send_cnt_info);
+    } else {
+      send(clnt_socket, "no active connections\n",
+	   strlen("no active connections\n"), 0);
+    }
+  } else {
+    send(clnt_socket, "unknow connection\n",
+	 strlen("unknow connection\n"), 0);
+    }
+}
+
+static void		send_history(history_t *hist)
+{
+  char	buff[BUFFER_SIZE];
+
+  memset(buff, 0, BUFFER_SIZE * sizeof(*buff));
+  snprintf(buff, BUFFER_SIZE, "port : %u nb : %lu first : %u last : %u\n",
+	   hist->port, hist->nb, (unsigned int)hist->first, (unsigned int)hist->last);
+  send(clnt_socket, buff, strlen(buff), 0);
+}
+
+static void		flux_cmd(global_info *info, char **param)
+{
+  u_int32_t		key;
+  u_int32_t		saddr;
+  u_int32_t		daddr;
+  List			*list = NULL;
+  message_queue_t	message;
+
+  inet_pton(AF_INET, param[1], &saddr);
+  inet_pton(AF_INET, param[2], &daddr);
+  key = saddr + daddr;
+  message.type = GET_HISTORY;
+  message.data = &key;
+  if (sem_init(&message.semaphore, 0, 0) == -1)
+    flowstat_perror("sem_init");
+  g_async_queue_push(info->packet_queue, &message);
+  sem_wait(&message.semaphore);
+  list = message.data;
+  if (list != NULL) {
+    if (list->size != 0) {
+      iterate(list, (void (*)(void *))&send_history);
+    } else {
+      send(clnt_socket, "no history\n", strlen("no history\n"), 0);
+    }
   } else {
     send(clnt_socket, "unknow connection\n",
 	 strlen("unknow connection\n"), 0);
