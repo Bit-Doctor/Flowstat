@@ -25,6 +25,7 @@ OBJS=		$(SRCS:%.c=%.o)
 OBJS:=		$(notdir $(OBJS))
 OBJS:=		$(addprefix $(OBJS_DIR), $(OBJS))
 
+
 all:		lib $(NAME)
 
 $(NAME): 	$(OBJS)
