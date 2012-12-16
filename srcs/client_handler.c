@@ -113,6 +113,7 @@ void		 	*client_handler(global_info *info)
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
   serv_addr.sin_port = htons(5454);
+  setsockopt(serv_socket, SOL_SOCKET, SO_REUSEADDR, (const char *)&o, sizeof(o));
   if ((serv_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
     flowstat_perror("socket");
     exit(EXIT_FAILURE);
